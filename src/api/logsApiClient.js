@@ -236,3 +236,23 @@ export const updateRoomNotes = async (roomNumber, notes) => {
         throw error;
     }
 };
+
+export const fetchLiveFeedActivity = async () => {
+    try {
+        const response = await fetch(api('/api/logs/live-feed'), {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Network response was not ok');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching live feed activity:', error);
+        throw error;
+    }
+};

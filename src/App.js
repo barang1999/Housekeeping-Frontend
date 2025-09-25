@@ -5,6 +5,7 @@ import Header from './components/Header';
 import FloorTabs from './components/FloorTabs';
 import RoomsContainer from './components/RoomsContainer';
 import LogsContainer from './components/LogsContainer';
+import LiveFeed from './components/LiveFeed';
 import Leaderboard from './components/Leaderboard';
 import BottomNavBar from './components/BottomNavBar'; // Import BottomNavBar
 import './App.css';
@@ -15,7 +16,7 @@ import { refreshToken, ensureValidToken, login, signup } from './api/authApiClie
 import { fetchRoomNotes } from './api/logsApiClient';
 
 // MUI Imports
-import { Container, Button, Typography, Box } from '@mui/material'; // Added Box for layout
+import { Button, Typography, Box } from '@mui/material'; // Removed Container from import
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -28,7 +29,7 @@ function App() {
   const [inspectionLogs, setInspectionLogs] = useState([]);
   const [roomNotes, setRoomNotes] = useState({});
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
-  const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Cleaning Log, 2: Task, 3: Rank
+const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Live, 2: Log, 3: Task, 4: Rank
 
   useEffect(() => {
     const validateTokenAndConnect = async () => {
@@ -289,7 +290,7 @@ function App() {
   }
 
   return (
-    <Container id="dashboard" sx={{ pb: 9 }}> {/* Add padding-bottom for BottomNavBar */}
+    <Box id="dashboard" sx={{ pb: 9, bgcolor: 'grey.200', minHeight: '100vh' }}> {/* Changed from Container to Box and updated props */}
       <Header onLogout={handleLogout} />
       <main style={{ paddingTop: '64px', paddingBottom: '20px' }}>
         {currentView === 0 && (
@@ -311,12 +312,14 @@ function App() {
             )}
           </>
         )}
+       
         {currentView === 1 && <LogsContainer />}
-        {currentView === 2 && <Box sx={{ p: 2 }}><Typography variant="h6">Task View (Coming Soon!)</Typography></Box>}
-        {currentView === 3 && <Leaderboard />}
+         {currentView === 2 && <LiveFeed socket={socket} />}
+        {currentView === 3 && <Box sx={{ p: 2 }}><Typography variant="h6">Task View (Coming Soon!)</Typography></Box>}
+        {currentView === 4 && <Leaderboard />}
       </main>
       <BottomNavBar onTabChange={handleTabChange} />
-    </Container>
+    </Box>
   );
 }
 
