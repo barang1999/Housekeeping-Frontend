@@ -53,15 +53,29 @@ export const login = async (username, password) => {
             body: JSON.stringify({ username, password }),
         });
 
-        const data = await response.json();
+        const rawBody = await response.text();
+        let data = null;
+
+        if (rawBody) {
+            try {
+                data = JSON.parse(rawBody);
+            } catch (parseError) {
+                console.warn("Login response was not valid JSON", parseError);
+            }
+        }
 
         if (response.ok) {
+            if (!data) {
+                return { success: false, message: "Unexpected login response." };
+            }
+
             localStorage.setItem("token", data.token);
             localStorage.setItem("username", data.username);
             localStorage.setItem("refreshToken", data.refreshToken);
             return { success: true, token: data.token, username: data.username };
         } else {
-            return { success: false, message: data.message };
+            const message = data?.message || "Login failed. Please try again.";
+            return { success: false, message };
         }
     } catch (error) {
         console.error("Login error:", error);
