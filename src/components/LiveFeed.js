@@ -9,7 +9,7 @@ const fmt = (d) =>
     hour12: true,
   });
 
-function Bubble({ icon, title, subtitle, ts }) {
+function Bubble({ icon, title, subtitle, ts, tags = [], note }) {
   const meta = [subtitle, fmt(ts)].filter(Boolean).join(' • ');
   return (
     <Box sx={{ display: 'flex', gap: 0.75, mb: 1 }}>
@@ -29,9 +29,21 @@ function Bubble({ icon, title, subtitle, ts }) {
         <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
           {title}
         </Typography>
+        {Array.isArray(tags) && tags.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.25 }}>
+            {tags.map((t, i) => (
+              <Chip key={i} label={t} size="small" variant="outlined" sx={{ height: 20 }} />
+            ))}
+          </Box>
+        )}
         {meta && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
             {meta}
+          </Typography>
+        )}
+        {note && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 0.25 }}>
+            {note}
           </Typography>
         )}
       </Paper>
@@ -119,6 +131,8 @@ export default function LiveFeed({ socket }) {
     const rn = p.roomNumber || '—';
     let title = '', subtitle = '';
     let icon = '⚡';
+    let tags = [];
+    let note;
 
     if (it.type === 'roomUpdate') {
       if (p.status === 'in_progress') {
@@ -157,12 +171,16 @@ export default function LiveFeed({ socket }) {
         icon = '🚩';
       }
     } else if (it.type === 'noteUpdate') {
-      title = `Room ${rn} note updated`;
-      subtitle = p.notes?.lastUpdatedBy ? `by ${p.notes.lastUpdatedBy}` : '';
       icon = '📝';
+      if (p.notes) {
+        tags = Array.isArray(p.notes.tags) ? p.notes.tags : [];
+        note = p.notes.note || '';
+        if (!subtitle && p.notes.lastUpdatedBy) subtitle = `by ${p.notes.lastUpdatedBy}`;
+      }
+      title = `Room ${rn} សូមកត់សម្គាល់`;
     }
 
-    return <Bubble key={it.id} icon={icon} title={title} subtitle={subtitle} ts={it.ts} />;
+    return <Bubble key={it.id} icon={icon} title={title} subtitle={subtitle} ts={it.ts} tags={tags} note={note} />;
   }), [items]);
 
   return (
