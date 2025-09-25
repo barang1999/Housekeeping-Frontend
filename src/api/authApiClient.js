@@ -1,6 +1,4 @@
-import apiUrl from './baseApiClient';
-
-const getAuthToken = () => localStorage.getItem('token');
+import { api } from './baseApiClient';
 
 export const refreshToken = async () => {
     const refreshToken = localStorage.getItem("refreshToken");
@@ -9,7 +7,7 @@ export const refreshToken = async () => {
     }
 
     try {
-        const res = await fetch(`${apiUrl}/api/auth/refresh`, {
+        const res = await fetch(api('/api/auth/refresh'), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refreshToken })
@@ -49,7 +47,7 @@ export const ensureValidToken = async () => {
 
 export const login = async (username, password) => {
     try {
-        const response = await fetch(`${apiUrl}/api/auth/login`, {
+        const response = await fetch(api('/api/auth/login'), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password }),
@@ -73,7 +71,7 @@ export const login = async (username, password) => {
 
 export const signup = async (username, password) => {
     try {
-        const response = await fetch(`${apiUrl}/api/auth/signup`, {
+        const response = await fetch(api('/api/auth/signup'), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password }),

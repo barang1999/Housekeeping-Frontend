@@ -1,11 +1,10 @@
-const apiUrlRoot = process.env.REACT_APP_API_URL || "http://localhost:3001";
-const apiUrl = `${apiUrlRoot}/api`;
+import { api } from './baseApiClient';
 
 const getAuthToken = () => localStorage.getItem('token');
 
 export const startCleaning = async (roomNumber) => {
     try {
-        const response = await fetch(`${apiUrl}/logs/start`, {
+        const response = await fetch(api('/api/logs/start'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -26,7 +25,7 @@ export const startCleaning = async (roomNumber) => {
 
 export const finishCleaning = async (roomNumber, username) => {
     try {
-        const response = await fetch(`${apiUrl}/logs/finish`, {
+        const response = await fetch(api('/api/logs/finish'), {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",
@@ -46,7 +45,7 @@ export const finishCleaning = async (roomNumber, username) => {
 };
 
 export const checkRoom = async (roomNumber, username) => {
-    const response = await fetch(`${apiUrl}/logs/check`, {
+    const response = await fetch(api('/api/logs/check'), {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
@@ -59,7 +58,7 @@ export const checkRoom = async (roomNumber, username) => {
 
 export const resetCleaning = async (roomNumber) => {
     try {
-        const response = await fetch(`${apiUrl}/logs/reset-cleaning`, {
+        const response = await fetch(api('/api/logs/reset-cleaning'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -80,7 +79,7 @@ export const resetCleaning = async (roomNumber) => {
 
 export const clearAllLogs = async () => {
     try {
-        const response = await fetch(`${apiUrl}/logs/clear`, {
+        const response = await fetch(api('/api/logs/clear'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -100,7 +99,7 @@ export const clearAllLogs = async () => {
 
 export const fetchLogs = async ({ status = 'all', dateFilter = 'all' }) => {
     try {
-        const url = new URL(`${apiUrl}/logs`);
+        const url = new URL(api('/api/logs'));
         if (status !== 'all') {
             url.searchParams.append('status', status);
         }
@@ -135,7 +134,7 @@ export const setRoomDNDStatus = async (roomNumber, dndStatus, usernameParam) => 
         const payload = { roomNumber: parseInt(roomNumber, 10), dndStatus };
         if (username) payload.username = username; // mirror Finish API style
 
-        const response = await fetch(`${apiUrl}/logs/dnd`, {
+        const response = await fetch(api('/api/logs/dnd'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -156,7 +155,7 @@ export const setRoomDNDStatus = async (roomNumber, dndStatus, usernameParam) => 
 
 export const fetchDNDRooms = async () => {
     try {
-        const response = await fetch(`${apiUrl}/logs/dnd`, {
+        const response = await fetch(api('/api/logs/dnd'), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -176,7 +175,7 @@ export const fetchDNDRooms = async () => {
 
 export const fetchInspectionLogByRoom = async (roomNumber) => {
     try {
-        const response = await fetch(`${apiUrl}/logs/inspection/${roomNumber}`, {
+        const response = await fetch(api(`/api/logs/inspection/${roomNumber}`), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -199,7 +198,7 @@ export const fetchInspectionLogByRoom = async (roomNumber) => {
 
 export const fetchRoomNotes = async () => {
     try {
-        const response = await fetch(`${apiUrl}/logs/notes`, {
+        const response = await fetch(api('/api/logs/notes'), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -219,7 +218,7 @@ export const fetchRoomNotes = async () => {
 
 export const updateRoomNotes = async (roomNumber, notes) => {
     try {
-        const response = await fetch(`${apiUrl}/logs/notes`, {
+        const response = await fetch(api('/api/logs/notes'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -237,5 +236,3 @@ export const updateRoomNotes = async (roomNumber, notes) => {
         throw error;
     }
 };
-
-export default apiUrl;
