@@ -290,7 +290,24 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Live, 2: Log,
   }
 
   return (
-    <Box id="dashboard" sx={{ pb: 9, bgcolor: 'grey.200', minHeight: '100vh' }}> {/* Changed from Container to Box and updated props */}
+    <Box
+      id="dashboard"
+      sx={{
+        pb: 9,
+        minHeight: '100vh',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          inset: 0,
+          zIndex: -1,
+          backgroundColor: 'grey.200',
+          backgroundImage:
+            'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0.14) 2px, transparent 2px, transparent 6px)',
+          backgroundSize: '8px 8px'
+        }
+      }}
+    >
       <Header onLogout={handleLogout} />
       <main style={{ paddingTop: '64px', paddingBottom: '20px' }}>
         {currentView === 0 && (

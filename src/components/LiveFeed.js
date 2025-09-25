@@ -166,7 +166,7 @@ export default function LiveFeed({ socket }) {
   }), [items]);
 
   return (
-    <Box sx={{ p: 1.5, bgcolor: 'grey.200', minHeight: '100vh' }}>
+    <Box sx={{ p: 1.5, minHeight: '100vh' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
       </Box>
       {items.length === 0

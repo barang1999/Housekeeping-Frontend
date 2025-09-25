@@ -208,7 +208,10 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                         cleaningStatus === 'finished' ? 'info.main' :
                         (cleaningStatus === 'checked' || hasInspectionData) ? 'success.main' :
                         'grey.200',
-                    bgcolor: 'background.paper',
+                    bgcolor: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
                     transition: 'box-shadow 0.2s ease, transform 0.15s ease',
                     '&:hover': { boxShadow: 2 },
                 }}
