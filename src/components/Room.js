@@ -217,16 +217,13 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                 }}
             >
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-                    {statusLabel !== 'Idle' && (
-                      <Typography
-                        variant="caption"
-                        sx={{ fontWeight: 600, color: statusColor, fontSize: '0.72rem', mt: 0, pt: 0, lineHeight: 1.1 }}
-                      >
-                        {statusLabel}
-                      </Typography>
-                    )}
+                   
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Typography variant="body1" component="div" sx={{ fontWeight: 600, letterSpacing: 0.2 }}>
+                      <Typography
+                        variant="body1"
+                        component="div"
+                        sx={{ fontWeight: 600, letterSpacing: 0.2, color: statusColor }}
+                      >
                         {roomNumber}
                       </Typography>
                       <RoomNotesMenu
