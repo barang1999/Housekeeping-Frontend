@@ -24,10 +24,10 @@ const RoomsContainer = ({ selectedFloor, cleaningStatus, dndStatus, priorities, 
     };
 
     return (
-        <Box sx={{ flexGrow: 1, px: 0, py: 2 }}>
+        <Box sx={{ flexGrow: 1, px: 0, py: 2, maxWidth: { xs: '100%', sm: 720 }, mx: 'auto' }}>
             <Grid container spacing={1}>
                 {floors[selectedFloor].map(roomNumber => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={roomNumber}>
+                    <Grid item xs={12} key={roomNumber}>
                         <Room 
                             roomNumber={roomNumber} 
                             cleaningStatus={cleaningStatus[roomNumber]}
