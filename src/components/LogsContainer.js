@@ -87,7 +87,16 @@ const LogsContainer = () => {
         <Box sx={{ p: 2 }}>
           
 
-            <Stack direction="row" spacing={1} sx={{ mb: 1, overflowX: 'auto' }}>
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    mb: 1,
+                    overflowX: 'auto',
+                    scrollbarWidth: 'none',
+                    '&::-webkit-scrollbar': { display: 'none' },
+                }}
+            >
                 {dateFilterOptions.map((option) => (
                     <Chip
                         key={option.value}
@@ -100,7 +109,16 @@ const LogsContainer = () => {
                 ))}
             </Stack>
 
-            <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto' }}>
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    mb: 2,
+                    overflowX: 'auto',
+                    scrollbarWidth: 'none',
+                    '&::-webkit-scrollbar': { display: 'none' },
+                }}
+            >
                 {statusOptions.map((option) => (
                     <Chip
                         key={option.value}
