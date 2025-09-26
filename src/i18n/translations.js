@@ -16,6 +16,7 @@ export const translations = {
     'menu.cleanLog': 'Clean Log',
     'menu.clearLog': 'Clear Log',
     'menu.logOut': 'Log Out',
+    'menu.inspection': 'Inspection',
 
     'header.prompt.resetRoom': 'Enter room number to reset cleaning status:',
     'header.alert.cleanSuccess': 'Cleaning status for room {room} reset.',
@@ -169,6 +170,7 @@ export const translations = {
     'menu.cleanLog': 'សម្អាតកំណត់ហេតុ',
     'menu.clearLog': 'លុបកំណត់ហេតុ',
     'menu.logOut': 'ចាកចេញ',
+    'menu.inspection': 'ការត្រួតពិនិត្យ',
 
     'header.prompt.resetRoom': 'បញ្ចូលលេខបន្ទប់ដើម្បីកំណត់ស្ថានភាពសម្អាតឡើងវិញ៖',
     'header.alert.cleanSuccess': 'ស្ថានភាពសម្អាតសម្រាប់បន្ទប់ {room} ត្រូវបានកំណត់ឡើងវិញ។',
