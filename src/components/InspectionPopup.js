@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Button, IconButton, Paper, Slider, Modal, Fade, Backdrop } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import { fetchInspectionLogByRoom } from '../api/logsApiClient'; // Import the new API function
+import { fetchInspectionLogByRoom, submitInspection } from '../api/logsApiClient'; // Import API helpers
 import CloseIcon from '@mui/icons-material/Close';
 
 
@@ -101,33 +101,14 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
     console.log('InspectionPopup rendering. roomNumber prop:', roomNumber); // Add this log
 
     const handleSubmit = async () => {
-        const inspectionData = {
-            roomNumber,
-            inspectionResults,
-            overallScore: normalizedScore,
-            timestamp: new Date().toISOString(),
-        };
-        console.log('handleSubmit called. inspectionData.roomNumber:', inspectionData.roomNumber); // Add this log
-
-        const token = localStorage.getItem('token'); // Retrieve token from localStorage
-        if (!token) {
-            console.warn('Submit blocked: no auth token present.');
-            return;
-        }
-
         try {
-            const response = await fetch('/api/inspection/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, // Add Authorization header
-                body: JSON.stringify(inspectionData),
+            await submitInspection({
+                roomNumber,
+                inspectionResults,
+                overallScore: normalizedScore,
+                timestamp: new Date().toISOString(),
             });
-
-            if (response.ok) {
-                handleCloseBottomSheet(); // Use the new handler
-            } else {
-                const errorData = await response.json();
-                console.error('Failed to submit inspection data', errorData);
-            }
+            handleCloseBottomSheet();
         } catch (error) {
             console.error('Error submitting inspection data:', error);
         }

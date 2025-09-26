@@ -24,9 +24,13 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
     const [roomToConfirm, setRoomToConfirm] = useState(null);
     const [showFinishConfirmModal, setShowFinishConfirmModal] = useState(false);
     const [roomToConfirmFinish, setRoomToConfirmFinish] = useState(null);
+    const [showCheckConfirmModal, setShowCheckConfirmModal] = useState(false);
+    const [roomToConfirmCheck, setRoomToConfirmCheck] = useState(null);
     const [notes, setNotes] = useState(roomNote || null);
     const username = localStorage.getItem('username');
     const [activeNoteIcon, setActiveNoteIcon] = useState(null);
+    const [isChecking, setIsChecking] = useState(false);
+    const [previousStatusBeforeCheck, setPreviousStatusBeforeCheck] = useState(null);
 
 
     const hasInspectionData = !!inspectionLog;
@@ -212,16 +216,42 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
         }
     };
 
-    const checkRoom = async () => {
-        console.log('Attempting to check room:', roomNumber, 'by user:', username);
-        const previousStatus = cleaningStatus; // Store current status for potential revert
+    const handleCheckClick = () => {
+        if (!username || cleaningStatus !== 'finished' || hasInspectionData || dndStatus === 'dnd') {
+            return;
+        }
+        setRoomToConfirmCheck(roomNumber);
+        setPreviousStatusBeforeCheck(cleaningStatus);
+        setShowCheckConfirmModal(true);
+    };
+
+    const confirmCheckRoom = async () => {
+        setShowCheckConfirmModal(false);
+        if (isChecking || !roomToConfirmCheck) {
+            return;
+        }
+
+        setIsChecking(true);
+        const targetRoom = roomToConfirmCheck;
+        const previousStatus = previousStatusBeforeCheck ?? cleaningStatus;
+
         try {
-            onRoomStatusChange(roomNumber, 'checked'); // Optimistic UI update
-            await apiCheckRoom(roomNumber, username);
+            onRoomStatusChange(targetRoom, 'checked'); // Optimistic UI update
+            await apiCheckRoom(targetRoom, username);
         } catch (error) {
             console.error('Error checking room:', error);
-            onRoomStatusChange(roomNumber, previousStatus); // Revert UI on error
+            onRoomStatusChange(targetRoom, previousStatus); // Revert UI on error
+        } finally {
+            setIsChecking(false);
+            setRoomToConfirmCheck(null);
+            setPreviousStatusBeforeCheck(null);
         }
+    };
+
+    const cancelCheckRoom = () => {
+        setShowCheckConfirmModal(false);
+        setRoomToConfirmCheck(null);
+        setPreviousStatusBeforeCheck(null);
     };
 
     return (
@@ -323,8 +353,8 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                     <IconButton
                         color="success"
                         size="small"
-                        onClick={checkRoom}
-                        disabled={cleaningStatus !== 'finished' || hasInspectionData || dndStatus === 'dnd'}
+                        onClick={handleCheckClick}
+                        disabled={isChecking || cleaningStatus !== 'finished' || hasInspectionData || dndStatus === 'dnd'}
                         aria-label="Quick Check Room"
                         sx={{ width: 30, height: 30, '&:hover': { bgcolor: 'action.hover' } }}
                     >
@@ -361,6 +391,13 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                 onConfirm={confirmFinishCleaning}
                 title="Confirm Cleaning Finish"
                 message={`You are finishing cleaning room ${roomToConfirmFinish}!`}
+            />
+            <ConfirmationModal
+                isOpen={showCheckConfirmModal}
+                onClose={cancelCheckRoom}
+                onConfirm={confirmCheckRoom}
+                title="Confirm Room Check"
+                message={`You are marking room ${roomToConfirmCheck || roomNumber} as checked!`}
             />
         </>
     );

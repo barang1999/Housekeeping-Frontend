@@ -196,6 +196,33 @@ export const fetchInspectionLogByRoom = async (roomNumber) => {
     }
 };
 
+export const submitInspection = async ({ roomNumber, inspectionResults, overallScore, timestamp }) => {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error('Missing authentication token');
+    }
+
+    const response = await fetch(api('/api/inspection/submit'), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ roomNumber, inspectionResults, overallScore, timestamp }),
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const body = isJson ? await response.json() : await response.text();
+
+    if (!response.ok) {
+        const message = isJson ? body?.message : body;
+        throw new Error(message || `Inspection submit failed (${response.status})`);
+    }
+
+    return body;
+};
+
 export const fetchRoomNotes = async () => {
     try {
         const response = await fetch(api('/api/logs/notes'), {
