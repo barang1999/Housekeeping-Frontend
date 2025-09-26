@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Grid, Card, CardContent, Chip, Typography, Stack, Tooltip, Divider } from '@mui/material';
+import { Box, Grid, Card, CardContent, Chip, Typography, Stack, Tooltip, Divider, Fab } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import RemoveIcon from '@mui/icons-material/Remove';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { fetchInspectionLogs } from '../api/logsApiClient';
 import { useTranslation } from '../i18n/LanguageProvider';
 
@@ -20,6 +23,14 @@ const ITEM_META = [
 ];
 
 const itemMetaByKey = ITEM_META.reduce((m, it) => (m[it.key] = it, m), {});
+
+const ALL_ROOMS = [
+  '001','002','003','004','005','006','007',
+  '011','012','013','014','015','016','017',
+  '101','102','103','104','105','106','107','108','109','110',
+  '111','112','113','114','115','116','117',
+  '201','202','203','204','205','208','209','210','211','212','213','214','215','216','217'
+];
 
 function statusChipColor(score) {
   if (score >= 85) return 'success';
@@ -71,10 +82,146 @@ export default function InspectionContainer() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (scoreFilter === 'ok') return logs.filter(l => (l.overallScore || 0) >= 70);
-    if (scoreFilter === 'low') return logs.filter(l => (l.overallScore || 0) < 70);
-    return logs;
+    let result = logs;
+    if (scoreFilter === 'ok') result = logs.filter(l => (l.overallScore || 0) >= 70);
+    if (scoreFilter === 'low') result = logs.filter(l => (l.overallScore || 0) < 70);
+    return [...result].sort((a, b) => Number(a.roomNumber) - Number(b.roomNumber));
   }, [logs, scoreFilter]);
+
+  const summary = useMemo(() => {
+    const inspectedSet = new Set(logs.map(l => String(l.roomNumber).padStart(3, '0')));
+    const notInspected = ALL_ROOMS.filter(r => !inspectedSet.has(r)).sort((a,b) => Number(a)-Number(b));
+    return {
+      totalRooms: ALL_ROOMS.length,
+      inspectedCount: inspectedSet.size,
+      notInspected,
+    };
+  }, [logs]);
+
+  const handleExport = () => {
+    try {
+      const doc = new jsPDF({ orientation: 'landscape' });
+
+      // Header with today's date (Asia/Phnom_Penh)
+      const dateTop = new Date();
+      const dateStr = dateTop.toLocaleDateString(undefined, { timeZone: 'Asia/Phnom_Penh' });
+      doc.setFontSize(12);
+      doc.text(`${t('inspection.export.title', 'Inspection Summary')} — ${dateStr}`, 14, 14);
+
+      // Build columns: fixed meta + dynamic item columns (use ITEM_META order and include any extra keys)
+      const knownKeys = ITEM_META.map(i => i.key);
+      const dynamicKeys = Array.from(new Set(
+        filtered.flatMap(l => Object.keys(l.items || {}))
+      ));
+      const extraKeys = dynamicKeys.filter(k => !knownKeys.includes(k));
+      const allItemKeys = [...knownKeys, ...extraKeys];
+
+      const head = [[
+        t('inspection.export.room', 'Room'),
+        t('inspection.export.updatedBy', 'Updated By'),
+        t('inspection.export.updatedAt', 'Updated At'),
+        t('inspection.export.overall', 'Overall %'),
+        ...allItemKeys.map(k => (itemMetaByKey[k]?.label || k))
+      ]];
+
+      const body = filtered.map(log => {
+        const updatedAt = log.updatedAt ? new Date(log.updatedAt) : null;
+        const base = [
+          log.roomNumber,
+          log.updatedBy || '-',
+          updatedAt ? updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-',
+          typeof log.overallScore === 'number' ? Math.round(log.overallScore) : '-'
+        ];
+        const rowItems = allItemKeys.map(k => {
+          const v = (log.items || {})[k];
+          if (v === 'passed') return 'Yes';
+          if (v === 'failed') return 'No';
+          if (v === 'na' || v === 'n/a' || v === 'skip') return '–';
+          return v ? String(v) : '-';
+        });
+        return [...base, ...rowItems];
+      });
+
+      const colStyles = {
+        0: { cellWidth: 18, halign: 'left' }, // Room
+        1: { cellWidth: 28, halign: 'left' }, // Updated By
+        2: { cellWidth: 28, halign: 'left' }, // Updated At (time)
+        3: { cellWidth: 16, halign: 'center' }, // Overall
+      };
+      const itemStartIndex = 4;
+      allItemKeys.forEach((_, idx) => {
+        colStyles[itemStartIndex + idx] = { cellWidth: 14, halign: 'center' };
+      });
+
+      autoTable(doc, {
+        head,
+        body,
+        styles: { fontSize: 7, halign: 'center' },
+        headStyles: {
+          fillColor: [220, 220, 220], // slightly darker gray
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 8,
+        },
+        margin: { top: 18 },
+        columnStyles: colStyles,
+        didParseCell: (data) => {
+          if (data.section === 'body') {
+            const raw = (data.cell.raw ?? '').toString();
+            // Highlight item cells that are No/N
+            if (data.column.index >= itemStartIndex && (raw === 'N' || raw.toLowerCase() === 'no')) {
+              data.cell.styles.textColor = [200, 0, 0];
+              data.cell.styles.fontStyle = 'bold';
+            }
+            // Highlight Overall % column if below 100
+            if (data.column.index === 3) {
+              const num = Number(raw);
+              if (!Number.isNaN(num) && num < 100) {
+                data.cell.styles.textColor = [200, 0, 0];
+                data.cell.styles.fontStyle = 'bold';
+              }
+            }
+          }
+        },
+        didDrawCell: (data) => {
+          if (data.section === 'body') {
+            const raw = (data.cell.raw ?? '').toString();
+            if (data.column.index >= itemStartIndex && (raw === 'N' || raw.toLowerCase() === 'no')) {
+              const x = data.cell.x;
+              const y = data.cell.y;
+              const w = data.cell.width;
+              const h = data.cell.height;
+              const cx = x + w / 2;
+              const cy = y + h / 2;
+              const r = Math.min(w, h) * 0.35;
+              doc.setDrawColor(200, 0, 0);
+              doc.setLineWidth(0.6);
+              doc.circle(cx, cy, r);
+            }
+          }
+        }
+      });
+
+      // Summary footer
+      const afterTableY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 8 : 24;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text(t('inspection.export.summary', 'Summary (today)'), 14, afterTableY);
+      doc.setFont(undefined, 'normal');
+      const line1 = `${t('inspection.export.summaryCounts', 'Inspected')}: ${summary.inspectedCount}/${summary.totalRooms}`;
+      doc.text(line1, 14, afterTableY + 6);
+      const missingLabel = t('inspection.export.missing', 'Not inspected');
+      const missingText = summary.notInspected.length ? summary.notInspected.join(', ') : t('inspection.export.none', 'None');
+      const wrapped = doc.splitTextToSize(`${missingLabel}: ${missingText}`, doc.internal.pageSize.getWidth() - 28);
+      doc.text(wrapped, 14, afterTableY + 12);
+
+      const filename = t('inspection.export.filename', 'inspection_logs_today.pdf');
+      doc.save(filename);
+    } catch (e) {
+      console.error('Export PDF failed:', e);
+    }
+  };
 
   return (
     <Box sx={{ p: 2 }}>
@@ -172,6 +319,23 @@ export default function InspectionContainer() {
           );
         })}
       </Grid>
+      <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.04)', border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t('inspection.summary.title', 'Summary (today)')}</Typography>
+        <Typography variant="body2" sx={{ mb: 0.5 }}>
+          {t('inspection.summary.counts', 'Inspected')}: {summary.inspectedCount}/{summary.totalRooms}
+        </Typography>
+        <Typography variant="body2">
+          {t('inspection.summary.missing', 'Not inspected')}: {summary.notInspected.length ? summary.notInspected.join(', ') : t('inspection.summary.none', 'None')}
+        </Typography>
+      </Box>
+      <Fab
+        color="primary"
+        aria-label={t('inspection.export.aria', 'export')}
+        sx={{ position: 'fixed', bottom: 80, right: 16 }}
+        onClick={handleExport}
+      >
+        <FileDownloadIcon />
+      </Fab>
     </Box>
   );
 }
