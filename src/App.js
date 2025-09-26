@@ -310,7 +310,7 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     <Box
       id="dashboard"
       sx={{
-        pb: 9,
+        pb: 12, // increased bottom padding
         minHeight: '100vh',
         position: 'relative',
         '&::before': {
@@ -326,7 +326,7 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
       }}
     >
       <Header onLogout={handleLogout} />
-      <main style={{ paddingTop: '64px', paddingBottom: '20px' }}>
+      <main style={{ paddingTop: '64px', paddingBottom: '40px' }}>
         {currentView === 0 && (
           <>
             <FloorTabs selectedFloor={selectedFloor} setSelectedFloor={setSelectedFloor} />

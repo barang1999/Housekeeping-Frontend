@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { fetchInspectionLogs } from '../api/logsApiClient';
 import { useTranslation } from '../i18n/LanguageProvider';
+import FloorTabs from './FloorTabs';
 
 const ITEM_META = [
   { key: 'TV', emoji: '📺', label: 'TV' },
@@ -32,6 +33,12 @@ const ALL_ROOMS = [
   '201','202','203','204','205','208','209','210','211','212','213','214','215','216','217'
 ];
 
+const floors = {
+  'ground-floor': ['001','002','003','004','005','006','007','011','012','013','014','015','016','017'],
+  'second-floor': ['101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','116','117'],
+  'third-floor': ['201','202','203','204','205','208','209','210','211','212','213','214','215','216','217'],
+};
+
 function statusChipColor(score) {
   if (score >= 85) return 'success';
   if (score >= 70) return 'info';
@@ -48,13 +55,7 @@ function ResultPill({ result }) {
 export default function InspectionContainer() {
   const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
-  const [scoreFilter, setScoreFilter] = useState('all'); // all | ok(>=70) | low(<70)
-
-  const scoreOptions = useMemo(() => ([
-    { label: t('inspection.filter.score.all', 'All'), value: 'all' },
-    { label: t('inspection.filter.score.ok', '≥ 70%'), value: 'ok' },
-    { label: t('inspection.filter.score.low', '< 70%'), value: 'low' },
-  ]), [t]);
+  const [selectedFloor, setSelectedFloor] = useState('ground-floor');
 
   useEffect(() => {
     let mounted = true;
@@ -82,21 +83,21 @@ export default function InspectionContainer() {
   }, []);
 
   const filtered = useMemo(() => {
-    let result = logs;
-    if (scoreFilter === 'ok') result = logs.filter(l => (l.overallScore || 0) >= 70);
-    if (scoreFilter === 'low') result = logs.filter(l => (l.overallScore || 0) < 70);
-    return [...result].sort((a, b) => Number(a.roomNumber) - Number(b.roomNumber));
-  }, [logs, scoreFilter]);
+    const roomsOnFloor = new Set(floors[selectedFloor] || []);
+    const result = logs.filter(l => roomsOnFloor.has(String(l.roomNumber).padStart(3, '0')));
+    return result.sort((a, b) => Number(a.roomNumber) - Number(b.roomNumber));
+  }, [logs, selectedFloor]);
 
   const summary = useMemo(() => {
-    const inspectedSet = new Set(logs.map(l => String(l.roomNumber).padStart(3, '0')));
-    const notInspected = ALL_ROOMS.filter(r => !inspectedSet.has(r)).sort((a,b) => Number(a)-Number(b));
+    const roomsOnFloor = floors[selectedFloor] || [];
+    const inspectedSet = new Set(logs.map(l => String(l.roomNumber).padStart(3, '0')).filter(r => roomsOnFloor.includes(r)));
+    const notInspected = roomsOnFloor.filter(r => !inspectedSet.has(r)).sort((a,b) => Number(a)-Number(b));
     return {
-      totalRooms: ALL_ROOMS.length,
+      totalRooms: roomsOnFloor.length,
       inspectedCount: inspectedSet.size,
       notInspected,
     };
-  }, [logs]);
+  }, [logs, selectedFloor]);
 
   const handleExport = () => {
     try {
@@ -106,7 +107,7 @@ export default function InspectionContainer() {
       const dateTop = new Date();
       const dateStr = dateTop.toLocaleDateString(undefined, { timeZone: 'Asia/Phnom_Penh' });
       doc.setFontSize(12);
-      doc.text(`${t('inspection.export.title', 'Inspection Summary')} — ${dateStr}`, 14, 14);
+      doc.text(`Inspection Summary — ${dateStr}`, 14, 14);
 
       // Build columns: fixed meta + dynamic item columns (use ITEM_META order and include any extra keys)
       const knownKeys = ITEM_META.map(i => i.key);
@@ -117,10 +118,10 @@ export default function InspectionContainer() {
       const allItemKeys = [...knownKeys, ...extraKeys];
 
       const head = [[
-        t('inspection.export.room', 'Room'),
-        t('inspection.export.updatedBy', 'Updated By'),
-        t('inspection.export.updatedAt', 'Updated At'),
-        t('inspection.export.overall', 'Overall %'),
+        'Room',
+        'Updated By',
+        'Updated At',
+        'Overall %',
         ...allItemKeys.map(k => (itemMetaByKey[k]?.label || k))
       ]];
 
@@ -207,16 +208,16 @@ export default function InspectionContainer() {
       const afterTableY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 8 : 24;
       doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
-      doc.text(t('inspection.export.summary', 'Summary (today)'), 14, afterTableY);
+      doc.text('Summary (today)', 14, afterTableY);
       doc.setFont(undefined, 'normal');
-      const line1 = `${t('inspection.export.summaryCounts', 'Inspected')}: ${summary.inspectedCount}/${summary.totalRooms}`;
+      const line1 = `Inspected: ${summary.inspectedCount}/${summary.totalRooms}`;
       doc.text(line1, 14, afterTableY + 6);
-      const missingLabel = t('inspection.export.missing', 'Not inspected');
-      const missingText = summary.notInspected.length ? summary.notInspected.join(', ') : t('inspection.export.none', 'None');
+      const missingLabel = 'Not inspected';
+      const missingText = summary.notInspected.length ? summary.notInspected.join(', ') : 'None';
       const wrapped = doc.splitTextToSize(`${missingLabel}: ${missingText}`, doc.internal.pageSize.getWidth() - 28);
       doc.text(wrapped, 14, afterTableY + 12);
 
-      const filename = t('inspection.export.filename', 'inspection_logs_today.pdf');
+      const filename = 'inspection_logs_today.pdf';
       doc.save(filename);
     } catch (e) {
       console.error('Export PDF failed:', e);
@@ -225,19 +226,10 @@ export default function InspectionContainer() {
 
   return (
     <Box sx={{ p: 2 }}>
-      {/* Filters */}
-      <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto' }}>
-        {scoreOptions.map(opt => (
-          <Chip
-            key={opt.value}
-            label={opt.label}
-            clickable
-            color={scoreFilter === opt.value ? 'primary' : 'default'}
-            onClick={() => setScoreFilter(opt.value)}
-            sx={{ minWidth: 80 }}
-          />
-        ))}
-      </Stack>
+      {/* Floor selector */}
+      <Box sx={{ mb: 1 }}>
+        <FloorTabs selectedFloor={selectedFloor} setSelectedFloor={setSelectedFloor} />
+      </Box>
 
       {/* Cards */}
       <Grid container spacing={2}>
