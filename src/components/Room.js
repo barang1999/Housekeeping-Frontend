@@ -3,7 +3,7 @@ import { startCleaning as apiStartCleaning, finishCleaning as apiFinishCleaning,
 import ConfirmationModal from '../ui/ConfirmationModal';
 
 // MUI Imports
-import { Card, CardContent, Typography, Button, Box, IconButton, Divider, Chip } from '@mui/material';
+import { Card, CardContent, Typography, Button, Box, IconButton, Chip } from '@mui/material';
 import SparklesIcon from '@mui/icons-material/AutoAwesome';
 import CheckCircleIcon from '@mui/icons-material/CheckCircleOutline';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
@@ -15,6 +15,7 @@ import WbSunnyOutlinedIcon from '@mui/icons-material/WbSunnyOutlined';
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
 import DoNotDisturbOnOutlinedIcon from '@mui/icons-material/DoNotDisturbOnOutlined';
 import RoomNotesMenu from './RoomNotesMenu';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
     
@@ -31,6 +32,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
     const [activeNoteIcon, setActiveNoteIcon] = useState(null);
     const [isChecking, setIsChecking] = useState(false);
     const [previousStatusBeforeCheck, setPreviousStatusBeforeCheck] = useState(null);
+    const { t } = useTranslation();
 
 
     const hasInspectionData = !!inspectionLog;
@@ -38,16 +40,6 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
     const inspectionIconColor = inspectionScore !== null && inspectionScore > 0
         ? (inspectionScore > 90 ? 'success' : inspectionScore < 50 ? 'error' : 'warning')
         : 'default';
-
-    const statusLabel = dndStatus === 'dnd'
-        ? 'DND'
-        : cleaningStatus === 'in_progress'
-        ? 'In progress'
-        : cleaningStatus === 'finished'
-        ? 'Finished'
-        : cleaningStatus === 'checked'
-        ? 'Checked'
-        : 'Idle';
 
     const statusColor = dndStatus === 'dnd'
         ? 'error.main'
@@ -206,7 +198,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
             // The backend will emit a websocket event, which App.js will catch and update state.
         } catch (error) {
             console.error('Error toggling DND status:', error);
-            alert('Failed to update DND status.');
+            alert(t('room.alert.dndFail', 'Failed to update DND status.'));
         }
     };
 
@@ -329,7 +321,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                         disabled={isStarting || !username || cleaningStatus === 'in_progress' || cleaningStatus === 'finished' || cleaningStatus === 'checked' || dndStatus === 'dnd'}
                         sx={{ minWidth: 68, px: 1, py: 0.25, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
                     >
-                        Start
+                        {t('room.button.start', 'Start')}
                     </Button>
                     <Button
                         variant="outlined"
@@ -339,13 +331,13 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                         disabled={isFinishing || cleaningStatus !== 'in_progress' || dndStatus === 'dnd'}
                         sx={{ minWidth: 68, px: 1, py: 0.25, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
                     >
-                        Finish
+                        {t('room.button.finish', 'Finish')}
                     </Button>
                     <IconButton
                         color={inspectionIconColor}
                         size="small"
                         onClick={() => onOpenInspection(roomNumber)}
-                        aria-label="Open Inspection"
+                        aria-label={t('room.aria.openInspection', 'Open Inspection')}
                         sx={{ width: 30, height: 30, '&:hover': { bgcolor: 'action.hover' } }}
                     >
                         <ClipboardEditIcon sx={{ fontSize: 20 }} />
@@ -355,7 +347,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                         size="small"
                         onClick={handleCheckClick}
                         disabled={isChecking || cleaningStatus !== 'finished' || hasInspectionData || dndStatus === 'dnd'}
-                        aria-label="Quick Check Room"
+                        aria-label={t('room.aria.quickCheck', 'Quick Check Room')}
                         sx={{ width: 30, height: 30, '&:hover': { bgcolor: 'action.hover' } }}
                     >
                         <CheckIcon sx={{ fontSize: 20 }} />
@@ -366,7 +358,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                         size="small"
                         onClick={toggleDND}
                         disabled={cleaningStatus === 'in_progress' || cleaningStatus === 'finished' || cleaningStatus === 'checked'}
-                        aria-label="Toggle Do Not Disturb"
+                        aria-label={t('room.aria.toggleDnd', 'Toggle Do Not Disturb')}
                         sx={{
                             width: 30,
                             height: 30,
@@ -382,22 +374,22 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                 isOpen={showConfirmModal}
                 onClose={cancelStartCleaning}
                 onConfirm={confirmStartCleaning}
-                title="Confirm Cleaning Start"
-                message={`You are starting to clean room ${roomToConfirm}!`}
+                title={t('room.confirm.start.title', 'Confirm Cleaning Start')}
+                message={t('room.confirm.start.message', 'You are starting to clean room {room}!', { room: roomToConfirm || roomNumber })}
             />
             <ConfirmationModal
                 isOpen={showFinishConfirmModal}
                 onClose={cancelFinishCleaning}
                 onConfirm={confirmFinishCleaning}
-                title="Confirm Cleaning Finish"
-                message={`You are finishing cleaning room ${roomToConfirmFinish}!`}
+                title={t('room.confirm.finish.title', 'Confirm Cleaning Finish')}
+                message={t('room.confirm.finish.message', 'You are finishing cleaning room {room}!', { room: roomToConfirmFinish || roomNumber })}
             />
             <ConfirmationModal
                 isOpen={showCheckConfirmModal}
                 onClose={cancelCheckRoom}
                 onConfirm={confirmCheckRoom}
-                title="Confirm Room Check"
-                message={`You are marking room ${roomToConfirmCheck || roomNumber} as checked!`}
+                title={t('room.confirm.check.title', 'Confirm Room Check')}
+                message={t('room.confirm.check.message', 'You are marking room {room} as checked!', { room: roomToConfirmCheck || roomNumber })}
             />
         </>
     );

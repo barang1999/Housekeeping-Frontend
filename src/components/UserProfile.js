@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Box, Avatar, Typography, IconButton, Drawer, List, ListItem, ListItemButton, ListItemText, Divider, ListItemIcon } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LogoutIcon from '@mui/icons-material/Logout'; // Import LogoutIcon
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const UserProfile = ({ onLogout }) => {
   const username = localStorage.getItem('username');
   const [openDrawer, setOpenDrawer] = useState(false);
+  const { t } = useTranslation();
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -51,7 +53,7 @@ const UserProfile = ({ onLogout }) => {
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccountCircleIcon fontSize="large" />
             <Typography variant="h6">
-              {username ? username : 'Guest'}
+              {username ? username : t('userProfile.guest', 'Guest')}
             </Typography>
           </Box>
           <Divider />
@@ -60,7 +62,7 @@ const UserProfile = ({ onLogout }) => {
               <ListItemIcon>
                 <LogoutIcon />
               </ListItemIcon>
-              <ListItemText primary="Log Out" />
+              <ListItemText primary={t('menu.logOut', 'Log Out')} />
             </ListItemButton>
           </List>
         </Box>

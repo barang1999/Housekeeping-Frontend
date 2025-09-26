@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { fetchLogs } from '../api/logsApiClient';
 
@@ -6,27 +6,29 @@ import { Box, Typography, Card, CardContent, Grid, Chip, Stack, Fab } from '@mui
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const LogsContainer = () => {
     const [logs, setLogs] = useState([]);
     const [filterStatus, setFilterStatus] = useState('all');
     const [dateFilter, setDateFilter] = useState('today');
+    const { t } = useTranslation();
 
-    const statusOptions = [
-        { label: 'All', value: 'all' },
-        { label: 'In Progress', value: 'in_progress' },
-        { label: 'Finished', value: 'finished' },
-        { label: 'Checked', value: 'checked' },
-        { label: 'Available', value: 'available' },
-    ];
+    const statusOptions = useMemo(() => [
+        { label: t('logs.filter.status.all', 'All'), value: 'all' },
+        { label: t('logs.filter.status.in_progress', 'In Progress'), value: 'in_progress' },
+        { label: t('logs.filter.status.finished', 'Finished'), value: 'finished' },
+        { label: t('logs.filter.status.checked', 'Checked'), value: 'checked' },
+        { label: t('logs.filter.status.available', 'Available'), value: 'available' },
+    ], [t]);
 
-    const dateFilterOptions = [
-        { label: 'All', value: 'all' },
-        { label: 'Today', value: 'today' },
-        { label: 'Yesterday', value: 'yesterday' },
-        { label: 'This Week', value: 'this_week' },
-        { label: 'This Month', value: 'this_month' },
-    ];
+    const dateFilterOptions = useMemo(() => [
+        { label: t('logs.filter.date.all', 'All'), value: 'all' },
+        { label: t('logs.filter.date.today', 'Today'), value: 'today' },
+        { label: t('logs.filter.date.yesterday', 'Yesterday'), value: 'yesterday' },
+        { label: t('logs.filter.date.this_week', 'This Week'), value: 'this_week' },
+        { label: t('logs.filter.date.this_month', 'This Month'), value: 'this_month' },
+    ], [t]);
 
     useEffect(() => {
         const getLogs = async () => {
@@ -49,7 +51,15 @@ const LogsContainer = () => {
     const handleExport = () => {
         const doc = new jsPDF();
         autoTable(doc, {
-            head: [['Date', 'Room Number', 'Start Time', 'Started By', 'Finish Time', 'Finished By', 'Duration (minutes)']],
+            head: [[
+                t('logs.table.date', 'Date'),
+                t('logs.table.roomNumber', 'Room Number'),
+                t('logs.table.startTime', 'Start Time'),
+                t('logs.table.startedBy', 'Started By'),
+                t('logs.table.finishTime', 'Finish Time'),
+                t('logs.table.finishedBy', 'Finished By'),
+                t('logs.table.duration', 'Duration (minutes)'),
+            ]],
             body: logs.map(log => {
                 const startTime = new Date(log.startTime);
                 const finishTime = log.finishTime ? new Date(log.finishTime) : null;
@@ -70,7 +80,7 @@ const LogsContainer = () => {
                 ];
             }),
         });
-        doc.save('cleaning_logs.pdf');
+        doc.save(t('logs.export.filename', 'cleaning_logs.pdf'));
     };
 
     return (
@@ -127,10 +137,10 @@ const LogsContainer = () => {
                           }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
                               <Typography variant="subtitle1" fontWeight={600} sx={{ letterSpacing: 0.2 }}>
-                                Room {log.roomNumber}
+                                {t('logs.card.room', 'Room {room}', { room: log.roomNumber })}
                               </Typography>
                               <Chip
-                                label={log.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                label={t(`status.${log.status}`, log.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))}
                                 color={
                                   log.status === 'in_progress' ? 'warning' :
                                   log.status === 'finished' ? 'info' :
@@ -143,14 +153,14 @@ const LogsContainer = () => {
 
                             <Box sx={{ display: 'grid', rowGap: 0.1 }}>
                               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}>
-                                <strong>User:</strong> {log.startedBy || log.finishedBy || log.checkedBy || '-'}
+                                <strong>{t('logs.card.user', 'User:')}</strong> {log.startedBy || log.finishedBy || log.checkedBy || '-'}
                               </Typography>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}>
-                                  <strong>Start:</strong> {new Date(log.startTime).toLocaleTimeString()}
+                                  <strong>{t('logs.card.start', 'Start:')}</strong> {new Date(log.startTime).toLocaleTimeString()}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}>
-                                  <strong>Finish:</strong> {log.finishTime ? new Date(log.finishTime).toLocaleTimeString() : '-'}
+                                  <strong>{t('logs.card.finish', 'Finish:')}</strong> {log.finishTime ? new Date(log.finishTime).toLocaleTimeString() : '-'}
                                 </Typography>
                               </Box>
                             </Box>
@@ -161,7 +171,7 @@ const LogsContainer = () => {
             </Grid>
             <Fab
                 color="primary"
-                aria-label="export"
+                aria-label={t('logs.export.aria', 'export')}
                 sx={{
                     position: 'fixed',
                     bottom: 80,

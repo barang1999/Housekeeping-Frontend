@@ -1,13 +1,14 @@
 // RoomNotesMenu.jsx
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  IconButton, Popover, Stack, Chip, TextField, Button, Typography, Divider, InputAdornment
+  IconButton, Popover, Stack, Chip, TextField, Button, Typography, InputAdornment
 } from '@mui/material';
 import NoteIcon from '@mui/icons-material/StickyNote2Outlined';
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined';
 import WbSunnyOutlinedIcon from '@mui/icons-material/WbSunnyOutlined';
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const tagConfig = {
   'Early arrival': { icon: <BoltOutlinedIcon fontSize="small" />, color: 'warning' },
@@ -26,6 +27,14 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
   );
   const [afterTime, setAfterTime] = useState(value?.afterTime || '');
   const [note, setNote] = useState(value?.note || '');
+  const { t } = useTranslation();
+
+  const tagLabels = useMemo(() => ({
+    'Early arrival': t('roomNotes.tag.earlyArrival', 'Early arrival'),
+    'Sunrise': t('roomNotes.tag.sunrise', 'Sunrise'),
+    'No arrival': t('roomNotes.tag.noArrival', 'No arrival'),
+    'Allow after time': t('roomNotes.tag.allowAfterTime', 'Allow after time'),
+  }), [t]);
 
   const selectedTriggerIcon = (() => {
     if (afterTimeEnabled && afterTime) return <AccessTimeOutlinedIcon fontSize="small" color="info" />;
@@ -56,7 +65,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
     <>
       <IconButton
         size="small"
-        aria-label="Room notes"
+        aria-label={t('roomNotes.aria', 'Room notes')}
         onClick={(e) => setAnchorEl(e.currentTarget)}
         color={hasAny ? 'info' : 'default'}
         sx={{ ml: 0.25, p: 0.5, borderRadius: 10 }}
@@ -87,11 +96,12 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="subtitle2" fontWeight={700}>
-            Room {roomNumber}
+            {t('roomNotes.header', 'Room {room}', { room: roomNumber })}
           </Typography>
           <Typography variant="caption" color="text.secondary" noWrap>
-            {afterTimeEnabled && afterTime ? `After ${afterTime}` :
-              (tags[0] || (note.trim() ? '1 note' : ''))}
+            {afterTimeEnabled && afterTime
+              ? t('roomNotes.summary.afterTime', 'After {time}', { time: afterTime })
+              : (tags[0] ? tagLabels[tags[0]] || tags[0] : (note.trim() ? t('roomNotes.summary.note', '1 note') : ''))}
           </Typography>
         </Stack>
 
@@ -101,7 +111,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
             return (
               <Chip
                 key={key}
-                label={key}
+                label={tagLabels[key] || key}
                 size="small"
                 variant={active ? 'filled' : 'outlined'}
                 color={active ? tagConfig[key].color : 'default'}
@@ -112,7 +122,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
             );
           })}
           <Chip
-            label="Allow after time"
+            label={tagLabels['Allow after time']}
             size="small"
             variant={afterTimeEnabled ? 'filled' : 'outlined'}
             color={afterTimeEnabled ? tagConfig['Allow after time'].color : 'default'}
@@ -125,7 +135,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
         {afterTimeEnabled && (
           <Stack direction="row" alignItems="center" spacing={0.75} mt={1}>
             <AccessTimeOutlinedIcon fontSize="small" />
-            <Typography variant="caption" color="text.secondary">After</Typography>
+            <Typography variant="caption" color="text.secondary">{t('roomNotes.afterLabel', 'After')}</Typography>
             <input
               type="time"
               value={afterTime}
@@ -143,7 +153,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
         <TextField
           size="small"
           variant="outlined"
-          placeholder="Add a note…"
+          placeholder={t('roomNotes.placeholder', 'Add a note…')}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           fullWidth
@@ -168,7 +178,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
 
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Button size="small" color="inherit" onClick={() => { setTags([]); setAfterTime(''); setAfterTimeEnabled(false); setNote(''); }}>
-            Clear
+            {t('roomNotes.clear', 'Clear')}
           </Button>
           <Stack direction="row" spacing={1}>
             <Button
@@ -177,7 +187,7 @@ export default function RoomNotesMenu({ roomNumber, value, onSave, triggerIcon }
               sx={{ minWidth: 'auto', px: 1.5, py: 0.25, fontSize: '0.7rem', borderRadius: 1.5, boxShadow: 'none' }}
               onClick={handleSave}
             >
-              Save
+              {t('roomNotes.save', 'Save')}
             </Button>
           </Stack>
         </Stack>

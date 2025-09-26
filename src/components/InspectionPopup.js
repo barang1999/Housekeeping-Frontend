@@ -1,37 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, List, ListItem, ListItemText, Button, IconButton, Paper, Slider, Modal, Fade, Backdrop } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, List, ListItem, ListItemText, Button, IconButton, Slider, Modal, Fade, Backdrop } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { fetchInspectionLogByRoom, submitInspection } from '../api/logsApiClient'; // Import API helpers
 import CloseIcon from '@mui/icons-material/Close';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 
 const InspectionPopup = ({ roomNumber, open, onClose }) => {
-    const inspectionItems = [
-        { name: "TV", emoji: "📺" },
-        { name: "Sofa", emoji: "🛋️" },
-        { name: "Lamp", emoji: "💡" },
-        { name: "Light", emoji: "🔆" },
-        { name: "Amenity", emoji: "🧴" },
-        { name: "Complimentary", emoji: "🍬" },
-        { name: "Balcony", emoji: "🏞️" },
-        { name: "Sink", emoji: "🚿" },
-        { name: "Door", emoji: "🚪" },
-        { name: "Minibar", emoji: "🍾" },
-    ];
+    const { t } = useTranslation();
+    const inspectionItems = useMemo(() => ([
+        { key: 'TV', emoji: '📺', label: t('inspection.item.tv', 'TV') },
+        { key: 'Sofa', emoji: '🛋️', label: t('inspection.item.sofa', 'Sofa') },
+        { key: 'Lamp', emoji: '💡', label: t('inspection.item.lamp', 'Lamp') },
+        { key: 'Light', emoji: '🔆', label: t('inspection.item.light', 'Light') },
+        { key: 'Amenity', emoji: '🧴', label: t('inspection.item.amenity', 'Amenity') },
+        { key: 'Complimentary', emoji: '🍬', label: t('inspection.item.complimentary', 'Complimentary') },
+        { key: 'Balcony', emoji: '🏞️', label: t('inspection.item.balcony', 'Balcony') },
+        { key: 'Sink', emoji: '🚿', label: t('inspection.item.sink', 'Sink') },
+        { key: 'Door', emoji: '🚪', label: t('inspection.item.door', 'Door') },
+        { key: 'Minibar', emoji: '🍾', label: t('inspection.item.minibar', 'Minibar') },
+    ]), [t]);
     const [inspectionResults, setInspectionResults] = useState({});
     const [normalizedScore, setNormalizedScore] = useState(0);
 
-    const handleInspection = (itemName, result) => {
+    const handleInspection = (itemKey, result) => {
         setInspectionResults(prevResults => {
-            const currentResult = prevResults[itemName];
+            const currentResult = prevResults[itemKey];
             if (currentResult === result) {
                 const newResults = { ...prevResults };
-                delete newResults[itemName];
+                delete newResults[itemKey];
                 return newResults;
             } else {
                 return {
                     ...prevResults,
-                    [itemName]: result
+                    [itemKey]: result
                 };
             }
         });
@@ -48,7 +50,7 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
         let failedCount = 0;
 
         for (const item of inspectionItems) {
-            const result = inspectionResults[item.name];
+            const result = inspectionResults[item.key];
             if (result === 'passed') {
                 passedCount++;
             } else if (result === 'failed') {
@@ -153,7 +155,7 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
                     }}
                 >
                     <IconButton
-                        aria-label="close"
+                        aria-label={t('inspection.aria.close', 'close')}
                         onClick={handleCloseBottomSheet} // Use the new handler
                         sx={{
                             position: 'absolute',
@@ -165,17 +167,17 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
                         <CloseIcon />
                     </IconButton>
                     <Typography id="inspection-modal-title" variant="h6" component="h2" gutterBottom>
-                        Inspection for Room {roomNumber}
+                        {t('inspection.title', 'Inspection for Room {room}', { room: roomNumber })}
                     </Typography>
                     <List sx={{ flexGrow: 1 }}>
                         {inspectionItems.map(item => {
-                            const result = inspectionResults[item.name];
+                            const result = inspectionResults[item.key];
                             return (
-                                <ListItem key={item.name} disablePadding>
-                                    <ListItemText primary={`${item.emoji} ${item.name}`} />
+                                <ListItem key={item.key} disablePadding>
+                                    <ListItemText primary={`${item.emoji} ${item.label}`} />
                                     <Box>
                                         <IconButton
-                                            onClick={() => handleInspection(item.name, 'passed')}
+                                            onClick={() => handleInspection(item.key, 'passed')}
                                             color={result === 'passed' ? 'success' : 'default'}
                                             sx={{ marginRight: 2 }}
                                         >
@@ -194,7 +196,7 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
                                             </Box>
                                         </IconButton>
                                         <IconButton
-                                            onClick={() => handleInspection(item.name, 'failed')}
+                                            onClick={() => handleInspection(item.key, 'failed')}
                                             color={result === 'failed' ? 'error' : 'default'}
                                         >
                                             <Box
@@ -220,7 +222,7 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
 
                             <Slider
                                 value={normalizedScore}
-                                aria-label="Overall Score"
+                                aria-label={t('inspection.sliderLabel', 'Overall Score')}
                                 valueLabelDisplay="auto"
                                 valueLabelFormat={(value) => `${value.toFixed(0)}%`}
                                 step={1}
@@ -241,10 +243,10 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
                         </Box>
                     <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
                         <Button variant="outlined" color="warning" onClick={handleClear}>
-                            Clear
+                            {t('inspection.button.clear', 'Clear')}
                         </Button>
                         <Button variant="contained" onClick={handleSubmit}>
-                            Submit
+                            {t('inspection.button.submit', 'Submit')}
                         </Button>
                     </Box>
                 </Box>

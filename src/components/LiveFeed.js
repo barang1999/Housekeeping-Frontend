@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Box, Typography, Paper, Chip } from '@mui/material';
 import { fetchLiveFeedActivity } from '../api/logsApiClient';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const fmt = (d) =>
   new Date(d).toLocaleTimeString([], {
@@ -53,6 +54,7 @@ function Bubble({ icon, title, subtitle, ts, tags = [], note }) {
 
 export default function LiveFeed({ socket }) {
   const [items, setItems] = useState([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     let cancelled = false;
@@ -136,37 +138,40 @@ export default function LiveFeed({ socket }) {
 
     if (it.type === 'roomUpdate') {
       if (p.status === 'in_progress') {
-        title = `Room ${rn} started cleaning`;
-        subtitle = p.startedBy ? `by ${p.startedBy}` : '';
+        title = t('liveFeed.roomStarted', 'Room {room} started cleaning', { room: rn });
+        subtitle = p.startedBy ? t('liveFeed.byUser', 'by {user}', { user: p.startedBy }) : '';
         icon = '🧹';
       } else if (p.status === 'finished') {
-        title = `Room ${rn} finished cleaning`;
-        subtitle = `${p.finishedBy ? `by ${p.finishedBy} ` : ''}${p.duration ? `• ${p.duration}` : ''}`.trim();
+        title = t('liveFeed.roomFinished', 'Room {room} finished cleaning', { room: rn });
+        const parts = [];
+        if (p.finishedBy) parts.push(t('liveFeed.byUser', 'by {user}', { user: p.finishedBy }));
+        if (p.duration) parts.push(p.duration);
+        subtitle = parts.join(' • ');
         icon = '☑️';
       } else if (p.status === 'available') {
-        title = `Room ${rn} reset to available`;
+        title = t('liveFeed.roomAvailable', 'Room {room} reset to available', { room: rn });
         icon = '🔁';
       }
     } else if (it.type === 'roomChecked') {
-      title = `Room ${rn} is checked`;
-      subtitle = p.checkedBy ? `by ${p.checkedBy}` : '';
+      title = t('liveFeed.roomChecked', 'Room {room} is checked', { room: rn });
+      subtitle = p.checkedBy ? t('liveFeed.byUser', 'by {user}', { user: p.checkedBy }) : '';
       icon = '✅';
     } else if (it.type === 'dndUpdate') {
       if (p.dndStatus) {
-        title = `Room ${rn} not allowed to clean`;
-        subtitle = p.dndSetBy ? `by ${p.dndSetBy}` : '';
+        title = t('liveFeed.roomNoClean', 'Room {room} not allowed to clean', { room: rn });
+        subtitle = p.dndSetBy ? t('liveFeed.byUser', 'by {user}', { user: p.dndSetBy }) : '';
         icon = '🚫';
       } else {
-        title = `Room ${rn} allow cleaning`;
-        subtitle = p.dndSetBy ? `by ${p.dndSetBy}` : '';
+        title = t('liveFeed.roomAllowClean', 'Room {room} allow cleaning', { room: rn });
+        subtitle = p.dndSetBy ? t('liveFeed.byUser', 'by {user}', { user: p.dndSetBy }) : '';
         icon = '☀️';
       }
     } else if (it.type === 'priorityUpdate') {
       if (p.allowCleaningTime) {
-        title = `Room ${rn} is allowed to clean at ${p.allowCleaningTime}`;
+        title = t('liveFeed.roomAllowAt', 'Room {room} is allowed to clean at {time}', { room: rn, time: p.allowCleaningTime });
         icon = '☀️';
       } else {
-        title = `Room ${rn} priority updated`;
+        title = t('liveFeed.roomPriority', 'Room {room} priority updated', { room: rn });
         subtitle = p.priority ? `${p.priority}` : '';
         icon = '🚩';
       }
@@ -175,20 +180,20 @@ export default function LiveFeed({ socket }) {
       if (p.notes) {
         tags = Array.isArray(p.notes.tags) ? p.notes.tags : [];
         note = p.notes.note || '';
-        if (!subtitle && p.notes.lastUpdatedBy) subtitle = `by ${p.notes.lastUpdatedBy}`;
+        if (!subtitle && p.notes.lastUpdatedBy) subtitle = t('liveFeed.byUser', 'by {user}', { user: p.notes.lastUpdatedBy });
       }
-      title = `Room ${rn} សូមកត់សម្គាល់`;
+      title = t('liveFeed.roomNote', 'Room {room} note updated', { room: rn });
     }
 
     return <Bubble key={it.id} icon={icon} title={title} subtitle={subtitle} ts={it.ts} tags={tags} note={note} />;
-  }), [items]);
+  }), [items, t]);
 
   return (
     <Box sx={{ p: 1.5, minHeight: '100vh' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
       </Box>
       {items.length === 0
-        ? <Typography variant="body2" color="text.secondary">Waiting for live updates…</Typography>
+        ? <Typography variant="body2" color="text.secondary">{t('liveFeed.waiting', 'Waiting for live updates…')}</Typography>
         : <Box>{bubbles}</Box>}
     </Box>
   );

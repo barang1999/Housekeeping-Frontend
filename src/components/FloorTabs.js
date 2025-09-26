@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Tabs, Tab, Box } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const FloorTabs = ({ selectedFloor, setSelectedFloor }) => {
   const [lockedFloor, setLockedFloor] = useState(() => {
     return localStorage.getItem('lockedFloor') || null;
   });
   const timerRef = useRef();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const storedLockedFloor = localStorage.getItem('lockedFloor');
@@ -45,14 +47,14 @@ const FloorTabs = ({ selectedFloor, setSelectedFloor }) => {
   };
 
   const floors = [
-    { label: "ជាន់ផ្ទាល់ដី", value: "ground-floor" },
-    { label: "ជាន់ទី១", value: "second-floor" },
-    { label: "ជាន់ទី២", value: "third-floor" },
+    { label: t('floor.ground', 'Ground Floor'), value: 'ground-floor' },
+    { label: t('floor.second', 'Second Floor'), value: 'second-floor' },
+    { label: t('floor.third', 'Third Floor'), value: 'third-floor' },
   ];
 
   return (
     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-      <Tabs value={selectedFloor} onChange={handleChange} aria-label="floor tabs" centered>
+      <Tabs value={selectedFloor} onChange={handleChange} aria-label={t('floor.tabsAria', 'floor tabs')} centered>
         {floors.map(floor => (
           <Tab
             key={floor.value}

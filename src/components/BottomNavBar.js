@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import { Home, ClipboardList, CheckSquare, Award } from 'lucide-react';
 import BoltIcon from '@mui/icons-material/Bolt';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 const BottomNavBar = ({ onTabChange }) => {
   const [value, setValue] = useState(0);
+  const { t } = useTranslation();
 
   return (
     <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
@@ -24,11 +26,11 @@ const BottomNavBar = ({ onTabChange }) => {
           },
         }}
       >
-        <BottomNavigationAction label="Floor" icon={<Home />} />
-        <BottomNavigationAction label="Log" icon={<ClipboardList />} />
-        <BottomNavigationAction label="Live" icon={<BoltIcon />} />
-        <BottomNavigationAction label="Task" icon={<CheckSquare />} />
-        <BottomNavigationAction label="Rank" icon={<Award />} />
+        <BottomNavigationAction label={t('nav.floor', 'Floor')} icon={<Home />} />
+        <BottomNavigationAction label={t('nav.log', 'Log')} icon={<ClipboardList />} />
+        <BottomNavigationAction label={t('nav.live', 'Live')} icon={<BoltIcon />} />
+        <BottomNavigationAction label={t('nav.task', 'Task')} icon={<CheckSquare />} />
+        <BottomNavigationAction label={t('nav.rank', 'Rank')} icon={<Award />} />
       </BottomNavigation>
     </Paper>
   );

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import MenuModal from './MenuModal';
 import UserProfile from './UserProfile'; // Import UserProfile
 import { resetCleaning, clearAllLogs } from '../api/logsApiClient';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from '../i18n/LanguageProvider';
 
 // MUI Imports
 import AppBar from '@mui/material/AppBar';
@@ -14,30 +16,31 @@ import Box from '@mui/material/Box';
 
 const Header = ({ onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const handleCleanLog = async () => {
-    const roomNumber = prompt("Enter room number to reset cleaning status:");
+    const roomNumber = prompt(t('header.prompt.resetRoom', 'Enter room number to reset cleaning status:'));
     if (roomNumber) {
       try {
         await resetCleaning(roomNumber);
-        alert(`Cleaning status for room ${roomNumber} reset.`);
+        alert(t('header.alert.cleanSuccess', 'Cleaning status for room {room} reset.', { room: roomNumber }));
       } catch (error) {
-        alert(`Failed to reset cleaning status: ${error.message}`);
+        alert(t('header.alert.cleanFail', 'Failed to reset cleaning status: {error}', { error: error.message }));
       }
     }
   };
 
   const handleClearLog = async () => {
-    if (window.confirm("Are you sure you want to clear all logs?")) {
+    if (window.confirm(t('header.confirm.clearLogs', 'Are you sure you want to clear all logs?'))) {
       try {
         await clearAllLogs();
-        alert("All logs cleared.");
+        alert(t('header.alert.clearSuccess', 'All logs cleared.'));
       } catch (error) {
-        alert(`Failed to clear all logs: ${error.message}`);
+        alert(t('header.alert.clearFail', 'Failed to clear all logs: {error}', { error: error.message }));
       }
     }
   };
