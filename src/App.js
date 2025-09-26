@@ -96,28 +96,22 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
                 setRoomNotes(prevNotes => ({ ...prevNotes, [roomNumber]: notes }));
             });
 
-            // Add this logic to handle day change
-            let today = new Date().getDate();
-            const dayChangeInterval = setInterval(() => {
-                const now = new Date();
-                if (now.getDate() !== today) {
-                    console.log("New day detected. Fetching new data.");
-                    today = now.getDate();
-                    // Reset states
-                    setCleaningStatus({});
-                    setDndStatus({});
-                    setPriorities({});
-                    setInspectionLogs([]);
-                    setRoomNotes({});
-                    setIsLoadingInitialData(true);
-                    // Request new data
-                    newSocket.emit("requestInitialData");
-                }
-            }, 60000); // Check every minute
+            // Listen for the daily reset event from the server
+            newSocket.on('dailyReset', () => {
+                console.log('Daily reset triggered from server. Refetching data...');
+                // Reset states
+                setCleaningStatus({});
+                setDndStatus({});
+                setPriorities({});
+                setInspectionLogs([]);
+                setRoomNotes({});
+                setIsLoadingInitialData(true);
+                // Request new data
+                newSocket.emit("requestInitialData");
+            });
 
             return () => {
                 newSocket.disconnect();
-                clearInterval(dayChangeInterval); // Clear interval on cleanup
             };
         } else {
             handleLogout();
