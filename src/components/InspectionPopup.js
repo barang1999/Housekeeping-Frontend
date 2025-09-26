@@ -82,7 +82,6 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
                     }
                 } catch (error) {
                     console.error('Error fetching inspection log:', error);
-                    alert('An error occurred while loading inspection data.');
                     setInspectionResults({});
                     setNormalizedScore(0);
                 }
@@ -112,7 +111,7 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
 
         const token = localStorage.getItem('token'); // Retrieve token from localStorage
         if (!token) {
-            alert('You are not logged in. Please log in to submit inspection data.');
+            console.warn('Submit blocked: no auth token present.');
             return;
         }
 
@@ -124,20 +123,23 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
             });
 
             if (response.ok) {
-                alert('Inspection data submitted successfully!');
                 handleCloseBottomSheet(); // Use the new handler
             } else {
                 const errorData = await response.json();
-                alert(`Failed to submit inspection data: ${errorData.message || response.statusText}`);
+                console.error('Failed to submit inspection data', errorData);
             }
         } catch (error) {
             console.error('Error submitting inspection data:', error);
-            alert('An error occurred while submitting inspection data.');
         }
     };
 
     const handleCloseBottomSheet = () => {
         onClose();
+    };
+
+    const handleClear = () => {
+        setInspectionResults({});
+        setNormalizedScore(0);
     };
 
     return (
@@ -256,7 +258,10 @@ const InspectionPopup = ({ roomNumber, open, onClose }) => {
                                 }}
                             />
                         </Box>
-                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
+                        <Button variant="outlined" color="warning" onClick={handleClear}>
+                            Clear
+                        </Button>
                         <Button variant="contained" onClick={handleSubmit}>
                             Submit
                         </Button>

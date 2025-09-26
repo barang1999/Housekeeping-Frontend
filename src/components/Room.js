@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { startCleaning as apiStartCleaning, finishCleaning as apiFinishCleaning, checkRoom as apiCheckRoom, setRoomDNDStatus, updateRoomNotes } from '../api/logsApiClient';
 import ConfirmationModal from '../ui/ConfirmationModal';
 
@@ -30,6 +30,10 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
 
 
     const hasInspectionData = !!inspectionLog;
+    const inspectionScore = typeof inspectionLog?.overallScore === 'number' ? inspectionLog.overallScore : null;
+    const inspectionIconColor = inspectionScore !== null && inspectionScore > 0
+        ? (inspectionScore > 90 ? 'success' : inspectionScore < 50 ? 'error' : 'warning')
+        : 'default';
 
     const statusLabel = dndStatus === 'dnd'
         ? 'DND'
@@ -37,7 +41,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
         ? 'In progress'
         : cleaningStatus === 'finished'
         ? 'Finished'
-        : (cleaningStatus === 'checked' || hasInspectionData)
+        : cleaningStatus === 'checked'
         ? 'Checked'
         : 'Idle';
 
@@ -47,7 +51,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
         ? 'warning.main'
         : cleaningStatus === 'finished'
         ? 'info.main'
-        : (cleaningStatus === 'checked' || hasInspectionData)
+        : cleaningStatus === 'checked'
         ? 'success.main'
         : 'text.secondary';
 
@@ -58,28 +62,59 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
       'Allow after time': ScheduleOutlinedIcon,
     };
 
+    const isTodayInPhnomPenh = (timestamp) => {
+        if (!timestamp) return false;
+        try {
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Phnom_Penh',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            });
+            const today = formatter.format(new Date());
+            const noteDate = formatter.format(new Date(timestamp));
+            return today === noteDate;
+        } catch (error) {
+            console.error('Error comparing note date:', error);
+            return false;
+        }
+    };
+
+    const todayNote = useMemo(() => {
+        if (!notes || !isTodayInPhnomPenh(notes.updatedAt)) {
+            return null;
+        }
+        return notes;
+    }, [notes]);
+
     const getActiveNoteIcon = () => {
-        if (!notes) return { Icon: null, color: 'default' };
-        if (notes.afterTime) return { Icon: ScheduleOutlinedIcon, color: 'info' }; // blue
-        if (notes.tags?.includes('Early arrival')) return { Icon: BoltOutlinedIcon, color: 'warning' }; // orange
-        if (notes.tags?.includes('Sunrise')) return { Icon: WbSunnyOutlinedIcon, color: 'error' }; // red
-        if (notes.tags?.includes('No arrival')) return { Icon: DoNotDisturbOnOutlinedIcon, color: 'default' }; // black
+        if (!todayNote) return { Icon: null, color: 'default' };
+        if (todayNote.afterTime) return { Icon: ScheduleOutlinedIcon, color: 'info' }; // blue
+        if (todayNote.tags?.includes('Early arrival')) return { Icon: BoltOutlinedIcon, color: 'warning' }; // orange
+        if (todayNote.tags?.includes('Sunrise')) return { Icon: WbSunnyOutlinedIcon, color: 'error' }; // red
+        if (todayNote.tags?.includes('No arrival')) return { Icon: DoNotDisturbOnOutlinedIcon, color: 'default' }; // black
         return { Icon: null, color: 'default' };
       };
     
       useEffect(() => {
         const { Icon, color } = getActiveNoteIcon();
         setActiveNoteIcon(Icon ? <Icon fontSize="small" color={color} /> : null);
-      }, [notes]);
+      }, [todayNote]);
 
       useEffect(() => {
         setNotes(roomNote || null);
       }, [roomNote]);
     
       const handleNoteSave = async (payload) => {
-        setNotes(payload); // optimistic local update
+        setNotes(prev => ({
+            ...prev,
+            ...payload,
+            lastUpdatedBy: username || prev?.lastUpdatedBy || '',
+            updatedAt: new Date().toISOString(),
+        })); // optimistic local update with metadata
         try {
-            await updateRoomNotes(roomNumber, payload);
+            const updated = await updateRoomNotes(roomNumber, payload);
+            setNotes(updated);
         } catch (error) {
             console.error('Error updating room notes:', error);
             // Optionally, revert the state if the API call fails
@@ -228,26 +263,26 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                       </Typography>
                       <RoomNotesMenu
                         roomNumber={roomNumber}
-                        value={notes}
+                        value={todayNote}
                         iconSize="small"
                         triggerIcon={activeNoteIcon}
                         onSave={handleNoteSave}
                       />
                     </Box>
-                    {(notes?.afterTime || notes?.note) && (
+                    {(todayNote?.afterTime || todayNote?.note) && (
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mt: -0.25 }}>
-                        {notes.afterTime && (
+                        {todayNote.afterTime && (
                           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }} noWrap>
-                            {new Date(`1970-01-01T${notes.afterTime}:00`).toLocaleTimeString([], {
+                            {new Date(`1970-01-01T${todayNote.afterTime}:00`).toLocaleTimeString([], {
                               hour: 'numeric',
                               minute: '2-digit',
                               hour12: true
                             })}
                           </Typography>
                         )}
-                        {notes.note && (
+                        {todayNote.note && (
                           <Typography variant="caption" color="text.primary" sx={{ fontSize: '0.8rem', fontWeight: 400 }} noWrap>
-                            {notes.note}
+                            {todayNote.note}
                           </Typography>
                         )}
                       </Box>
@@ -277,7 +312,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
                         Finish
                     </Button>
                     <IconButton
-                        color={hasInspectionData ? "success" : "info"}
+                        color={inspectionIconColor}
                         size="small"
                         onClick={() => onOpenInspection(roomNumber)}
                         aria-label="Open Inspection"

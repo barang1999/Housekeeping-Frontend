@@ -77,8 +77,18 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Live, 2: Log,
                 setPriorities(prevPriorities => ({ ...prevPriorities, [roomNumber]: priority }));
             });
 
-            newSocket.on("inspectionUpdate", (logs) => {
-                setInspectionLogs(logs);
+            newSocket.on("inspectionUpdate", ({ roomNumber, log }) => {
+                if (!log) return;
+                setInspectionLogs(prevLogs => {
+                    const prevArray = Array.isArray(prevLogs) ? [...prevLogs] : [];
+                    const index = prevArray.findIndex(entry => entry.roomNumber === roomNumber);
+                    if (index >= 0) {
+                        prevArray[index] = { ...prevArray[index], ...log };
+                    } else {
+                        prevArray.push(log);
+                    }
+                    return prevArray;
+                });
             });
 
             newSocket.on("noteUpdate", ({ roomNumber, notes }) => {
