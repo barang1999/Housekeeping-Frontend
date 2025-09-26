@@ -196,6 +196,26 @@ export const fetchInspectionLogByRoom = async (roomNumber) => {
     }
 };
 
+export const fetchInspectionLogs = async () => {
+    try {
+        const response = await fetch(api('/api/logs/inspection'), {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Network response was not ok');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching inspection logs:', error);
+        throw error;
+    }
+};
+
 export const submitInspection = async ({ roomNumber, inspectionResults, overallScore, timestamp }) => {
     const token = getAuthToken();
     if (!token) {

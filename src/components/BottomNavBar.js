@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import { Home, ClipboardList, CheckSquare, Award } from 'lucide-react';
 import BoltIcon from '@mui/icons-material/Bolt';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { useTranslation } from '../i18n/LanguageProvider';
 
 const BottomNavBar = ({ onTabChange }) => {
@@ -29,7 +30,7 @@ const BottomNavBar = ({ onTabChange }) => {
         <BottomNavigationAction label={t('nav.floor', 'Floor')} icon={<Home />} />
         <BottomNavigationAction label={t('nav.log', 'Log')} icon={<ClipboardList />} />
         <BottomNavigationAction label={t('nav.live', 'Live')} icon={<BoltIcon />} />
-        <BottomNavigationAction label={t('nav.task', 'Task')} icon={<CheckSquare />} />
+        <BottomNavigationAction label={t('nav.inspection', 'Inspection')} icon={<AssignmentTurnedInIcon />} />
         <BottomNavigationAction label={t('nav.rank', 'Rank')} icon={<Award />} />
       </BottomNavigation>
     </Paper>

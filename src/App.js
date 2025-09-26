@@ -5,6 +5,7 @@ import Header from './components/Header';
 import FloorTabs from './components/FloorTabs';
 import RoomsContainer from './components/RoomsContainer';
 import LogsContainer from './components/LogsContainer';
+import InspectionContainer from './components/InspectionContainer';
 import LiveFeed from './components/LiveFeed';
 import Leaderboard from './components/Leaderboard';
 import BottomNavBar from './components/BottomNavBar'; // Import BottomNavBar
@@ -29,7 +30,7 @@ function App() {
   const [inspectionLogs, setInspectionLogs] = useState([]);
   const [roomNotes, setRoomNotes] = useState({});
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
-const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Live, 2: Log, 3: Task, 4: Rank
+const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live, 3: Task, 4: Rank, 5: Inspection
 
   useEffect(() => {
     const validateTokenAndConnect = async () => {
@@ -126,6 +127,12 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Live, 2: Log,
     validateTokenAndConnect();
 
   }, [token]);
+
+  useEffect(() => {
+    const goToInspection = () => setCurrentView(5);
+    window.addEventListener('navigateInspection', goToInspection);
+    return () => window.removeEventListener('navigateInspection', goToInspection);
+  }, []);
 
   // --- Web Push registration & subscription ---
   useEffect(() => {
@@ -342,8 +349,9 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Live, 2: Log,
        
         {currentView === 1 && <LogsContainer />}
          {currentView === 2 && <LiveFeed socket={socket} />}
-        {currentView === 3 && <Box sx={{ p: 2 }}><Typography variant="h6">Task View (Coming Soon!)</Typography></Box>}
+        {currentView === 3 && <InspectionContainer />}
         {currentView === 4 && <Leaderboard />}
+      
       </main>
       <BottomNavBar onTabChange={handleTabChange} />
     </Box>

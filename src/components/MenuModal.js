@@ -4,6 +4,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // For profile icon
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { useTranslation } from '../i18n/LanguageProvider';
 import LanguageSwitcher from './LanguageSwitcher';
 
@@ -39,6 +40,12 @@ const MenuModal = ({ isOpen, onClose, onLogout, onCleanLog, onClearLog, user }) 
               <DeleteIcon />
             </ListItemIcon>
             <ListItemText primary={t('menu.clearLog', 'Clear Log')} />
+          </ListItemButton>
+          <ListItemButton onClick={() => { if (typeof onClose === 'function') onClose(); window.dispatchEvent(new CustomEvent('navigateInspection')); }}>
+            <ListItemIcon>
+              <AssignmentTurnedInIcon />
+            </ListItemIcon>
+            <ListItemText primary={t('menu.inspection', 'Inspection')} />
           </ListItemButton>
         </List>
         <Divider />
