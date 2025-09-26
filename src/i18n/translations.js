@@ -217,7 +217,7 @@ export const translations = {
     'room.confirm.check.message': 'អ្នកបានត្រួតពិនិត្យបន្ទប់ {room}!',
 
     'roomNotes.tag.earlyArrival': 'មកដល់មុន',
-    'roomNotes.tag.sunrise': 'ពេលព្រឹក',
+    'roomNotes.tag.sunrise': 'ថ្ងៃរះ',
     'roomNotes.tag.noArrival': 'មិនមានភ្ញៀវទេ',
     'roomNotes.tag.allowAfterTime': 'អនុញ្ញាតក្រោយម៉ោង',
     'roomNotes.aria': 'កំណត់ចំណាំបន្ទប់',
