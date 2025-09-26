@@ -246,14 +246,14 @@ export const translations = {
     'inspection.title': 'ការត្រួតពិនិត្យសម្រាប់បន្ទប់ {room}',
     'inspection.sliderLabel': 'ពិន្ទុសរុប',
     'inspection.button.clear': 'ជម្រះ',
-    'inspection.button.submit': 'ដាក់ស្នើ',
+    'inspection.button.submit': 'បញ្ជូន',
 
     'leaderboard.title': 'ក្រុមចំណាត់ថ្នាក់',
     'leaderboard.entry': '{rank}. {name} - {points} ពិន្ទុ',
 
     'liveFeed.waiting': 'កំពុងរង់ចាំការបច្ចុប្បន្នភាពផ្ទាល់...',
     'liveFeed.roomStarted': 'បន្ទប់ {room} បានចាប់ផ្តើមសម្អាត',
-    'liveFeed.roomFinished': 'បន្ទប់ {room} បានបញ្ចប់សម្អាត',
+    'liveFeed.roomFinished': 'បន្ទប់ {room} បានសម្អាតហើយ',
     'liveFeed.roomAvailable': 'បន្ទប់ {room} បានកំណត់អោយអាចប្រើបានវិញ',
     'liveFeed.roomChecked': 'បន្ទប់ {room} បានពិនិត្យ',
     'liveFeed.roomNoClean': 'បន្ទប់ {room} មិនអនុញ្ញាតឱ្យសម្អាត',
