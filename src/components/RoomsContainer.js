@@ -30,10 +30,11 @@ const RoomsContainer = ({ selectedFloor, cleaningStatus, dndStatus, priorities, 
                     <Grid item xs={12} key={roomNumber}>
                         <Room 
                             roomNumber={roomNumber} 
-                            cleaningStatus={cleaningStatus[roomNumber]}
+                            cleaningStatus={cleaningStatus[roomNumber]?.status}
+                            startTime={cleaningStatus[roomNumber]?.startTime}
                             dndStatus={dndStatus[roomNumber]}
                             priority={priorities[roomNumber]}
-                            inspectionLog={inspectionLogs.find(log => log.roomNumber === roomNumber)}
+                            inspectionLog={inspectionLogs.find(log => String(log.roomNumber).padStart(3, '0') === roomNumber)}
                             roomNote={roomNotes[roomNumber]}
                             socket={socket}
                             onOpenInspection={handleOpenInspection}

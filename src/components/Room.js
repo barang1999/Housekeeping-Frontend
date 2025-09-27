@@ -17,7 +17,7 @@ import DoNotDisturbOnOutlinedIcon from '@mui/icons-material/DoNotDisturbOnOutlin
 import RoomNotesMenu from './RoomNotesMenu';
 import { useTranslation } from '../i18n/LanguageProvider';
 
-const Room = ({ roomNumber, cleaningStatus, dndStatus = 'available', priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
+const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
     
     const [isStarting, setIsStarting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
@@ -32,7 +32,27 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus = 'available', priority, i
     const [activeNoteIcon, setActiveNoteIcon] = useState(null);
     const [isChecking, setIsChecking] = useState(false);
     const [previousStatusBeforeCheck, setPreviousStatusBeforeCheck] = useState(null);
+    const [elapsedTime, setElapsedTime] = useState(0);
     const { t } = useTranslation();
+
+    useEffect(() => {
+        let interval;
+        if (cleaningStatus === 'in_progress' && startTime) {
+            const start = new Date(startTime).getTime();
+            const updateElapsedTime = () => {
+                const now = Date.now();
+                const seconds = Math.floor((now - start) / 1000);
+                setElapsedTime(seconds);
+            };
+
+            updateElapsedTime(); // Update immediately
+            interval = setInterval(updateElapsedTime, 1000); // Then update every second
+        } else {
+            setElapsedTime(0);
+        }
+
+        return () => clearInterval(interval);
+    }, [cleaningStatus, startTime]);
 
     const hasInspectionData = !!inspectionLog;
     const inspectionScore = typeof inspectionLog?.overallScore === 'number' ? inspectionLog.overallScore : null;
@@ -323,6 +343,11 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus = 'available', priority, i
                         triggerIcon={activeNoteIcon}
                         onSave={handleNoteSave}
                       />
+                      {cleaningStatus === 'in_progress' && (
+                        <Typography variant="caption" sx={{ ml: 1 }}>
+                            {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
+                        </Typography>
+                      )}
                     </Box>
                     {(todayNote?.afterTime || todayNote?.note) && (
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mt: -0.25 }}>

@@ -73,8 +73,8 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
         setIsLoadingInitialData(false);
     });
 
-    socket.on("roomUpdate", ({ roomNumber, status }) => {
-        setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: status }));
+    socket.on("roomUpdate", ({ roomNumber, status, startTime }) => {
+        setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: { status, startTime } }));
     });
 
     socket.on("roomChecked", ({ roomNumber, status }) => {
