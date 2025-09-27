@@ -16,7 +16,7 @@ function Bubble({ icon, title, subtitle, ts, tags = [], note }) {
     <Box sx={{ display: 'flex', gap: 0.75, mb: 1 }}>
       <Box sx={{ alignSelf: 'center', lineHeight: 0, fontSize: '1rem' }}>{icon}</Box>
       <Paper
-        elevation={0}
+        elevation={1}
         sx={{
           p: 1,
           borderRadius: 1.5,
@@ -25,6 +25,7 @@ function Bubble({ icon, title, subtitle, ts, tags = [], note }) {
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           flex: 1,
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)', // Add this line
         }}
       >
         <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
