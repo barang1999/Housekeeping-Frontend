@@ -260,7 +260,7 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus = 'available', priority, i
                     borderLeft: 4,
                     borderColor:
                         dndStatus === 'dnd' ? 'error.main' :
-                        cleaningStatus === 'in_progress' ? 'warning.main' :
+                        cleaningStatus === 'in_progress' ? 'transparent' : // Use transparent for the gradient to show
                         cleaningStatus === 'finished' ? 'info.main' :
                         (cleaningStatus === 'checked' || hasInspectionData) ? 'success.main' :
                         'grey.200',
@@ -270,6 +270,40 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus = 'available', priority, i
                     WebkitBackdropFilter: 'blur(12px)',
                     transition: 'box-shadow 0.2s ease, transform 0.15s ease',
                     '&:hover': { boxShadow: 2 },
+                    ...(cleaningStatus === 'in_progress' && {
+                        position: 'relative',
+                        overflow: 'hidden',
+                        borderWidth: '0px',
+                        borderStyle: 'solid',
+                        borderColor: 'transparent',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            border: '2px solid transparent',
+                            borderRadius: '8px',
+                            background: 'linear-gradient(to right, #ffab00, #ffea00, #ffab00) border-box',
+                            WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
+                            WebkitMaskComposite: 'destination-out',
+                            maskComposite: 'exclude',
+                            animation: 'gradient 3s linear infinite',
+                            backgroundSize: '200% 100%',
+                        },
+                        '@keyframes gradient': {
+                            '0%': {
+                                backgroundPosition: '0% 50%',
+                            },
+                            '50%': {
+                                backgroundPosition: '100% 50%',
+                            },
+                            '100%': {
+                                backgroundPosition: '0% 50%',
+                            },
+                        },
+                    }),
                 }}
             >
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
