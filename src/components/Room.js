@@ -17,7 +17,7 @@ import DoNotDisturbOnOutlinedIcon from '@mui/icons-material/DoNotDisturbOnOutlin
 import RoomNotesMenu from './RoomNotesMenu';
 import { useTranslation } from '../i18n/LanguageProvider';
 
-const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
+const Room = ({ roomNumber, cleaningStatus, dndStatus = 'available', priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
     
     const [isStarting, setIsStarting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
@@ -33,7 +33,6 @@ const Room = ({ roomNumber, cleaningStatus, dndStatus, priority, inspectionLog, 
     const [isChecking, setIsChecking] = useState(false);
     const [previousStatusBeforeCheck, setPreviousStatusBeforeCheck] = useState(null);
     const { t } = useTranslation();
-
 
     const hasInspectionData = !!inspectionLog;
     const inspectionScore = typeof inspectionLog?.overallScore === 'number' ? inspectionLog.overallScore : null;

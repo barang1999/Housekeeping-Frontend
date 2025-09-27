@@ -47,72 +47,6 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
             });
 
             setSocket(newSocket);
-
-            newSocket.on("connect", () => {
-                console.log("WebSocket connected");
-                newSocket.emit("requestInitialData");
-            });
-
-            newSocket.on("initialData", (data) => {
-                setCleaningStatus(data.cleaningStatus || {});
-                setDndStatus(data.dndStatus || {});
-                setPriorities(data.priorities || {});
-                setInspectionLogs(data.inspectionLogs || []);
-                setRoomNotes(data.roomNotes || {});
-                setIsLoadingInitialData(false);
-            });
-
-            newSocket.on("roomUpdate", ({ roomNumber, status }) => {
-                setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: status }));
-            });
-
-            newSocket.on("roomChecked", ({ roomNumber, status }) => {
-                setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: status }));
-            });
-
-            newSocket.on("dndUpdate", ({ roomNumber, dndStatus }) => {
-                setDndStatus(prevStatus => ({ ...prevStatus, [roomNumber]: dndStatus ? 'dnd' : 'available' }));
-            });
-
-            newSocket.on("priorityUpdate", ({ roomNumber, priority }) => {
-                setPriorities(prevPriorities => ({ ...prevPriorities, [roomNumber]: priority }));
-            });
-
-            newSocket.on("inspectionUpdate", ({ roomNumber, log }) => {
-                if (!log) return;
-                setInspectionLogs(prevLogs => {
-                    const prevArray = Array.isArray(prevLogs) ? [...prevLogs] : [];
-                    const index = prevArray.findIndex(entry => entry.roomNumber === roomNumber);
-                    if (index >= 0) {
-                        prevArray[index] = { ...prevArray[index], ...log };
-                    } else {
-                        prevArray.push(log);
-                    }
-                    return prevArray;
-                });
-            });
-
-            newSocket.on("noteUpdate", ({ roomNumber, notes }) => {
-                setRoomNotes(prevNotes => ({ ...prevNotes, [roomNumber]: notes }));
-            });
-
-            // Listen for the daily reset event from the server
-            newSocket.on('dailyReset', () => {
-                console.log('Daily reset triggered from server. Refetching data...');
-                // Reset states
-                setCleaningStatus({});
-                setDndStatus({});
-                setPriorities({});
-                setInspectionLogs([]);
-                setRoomNotes({});
-                setIsLoadingInitialData(true);
-                // Request new data
-                newSocket.emit("requestInitialData");
-            });
-
-            return () => {
-                newSocket.disconnect();
-            };
         } else {
             handleLogout();
         }
@@ -121,6 +55,84 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     validateTokenAndConnect();
 
   }, [token]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("connect", () => {
+        console.log("WebSocket connected");
+        socket.emit("requestInitialData");
+    });
+
+    socket.on("initialData", (data) => {
+        setCleaningStatus(data.cleaningStatus || {});
+        setDndStatus(data.dndStatus || {});
+        setPriorities(data.priorities || {});
+        setInspectionLogs(data.inspectionLogs || []);
+        setRoomNotes(data.roomNotes || {});
+        setIsLoadingInitialData(false);
+    });
+
+    socket.on("roomUpdate", ({ roomNumber, status }) => {
+        setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: status }));
+    });
+
+    socket.on("roomChecked", ({ roomNumber, status }) => {
+        setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: status }));
+    });
+
+    socket.on("dndUpdate", ({ roomNumber, dndStatus }) => {
+        setDndStatus(prevStatus => ({ ...prevStatus, [roomNumber]: dndStatus ? 'dnd' : 'available' }));
+    });
+
+    socket.on("priorityUpdate", ({ roomNumber, priority }) => {
+        setPriorities(prevPriorities => ({ ...prevPriorities, [roomNumber]: priority }));
+    });
+
+    socket.on("inspectionUpdate", ({ roomNumber, log }) => {
+        if (!log) return;
+        setInspectionLogs(prevLogs => {
+            const prevArray = Array.isArray(prevLogs) ? [...prevLogs] : [];
+            const index = prevArray.findIndex(entry => entry.roomNumber === roomNumber);
+            if (index >= 0) {
+                prevArray[index] = { ...prevArray[index], ...log };
+            } else {
+                prevArray.push(log);
+            }
+            return prevArray;
+        });
+    });
+
+    socket.on("noteUpdate", ({ roomNumber, notes }) => {
+        setRoomNotes(prevNotes => ({ ...prevNotes, [roomNumber]: notes }));
+    });
+
+    // Listen for the daily reset event from the server
+    socket.on('dailyReset', () => {
+        console.log('Daily reset triggered from server. Refetching data...');
+        // Reset states
+        setCleaningStatus({});
+        setDndStatus({});
+        setPriorities({});
+        setInspectionLogs([]);
+        setRoomNotes({});
+        setIsLoadingInitialData(true);
+        // Request new data
+        socket.emit("requestInitialData");
+    });
+
+    return () => {
+        socket.off("connect");
+        socket.off("initialData");
+        socket.off("roomUpdate");
+        socket.off("roomChecked");
+        socket.off("dndUpdate");
+        socket.off("priorityUpdate");
+        socket.off("inspectionUpdate");
+        socket.off("noteUpdate");
+        socket.off("dailyReset");
+    };
+  }, [socket]);
 
   useEffect(() => {
     const goToInspection = () => setCurrentView(5);
