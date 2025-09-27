@@ -20,12 +20,12 @@ function Bubble({ icon, title, subtitle, ts, tags = [], note }) {
         sx={{
           p: 1,
           borderRadius: 1.5,
-          bgcolor: 'rgba(255,255,255,0.5)',
-          border: '1px solid rgba(255,255,255,0.2)',
+          bgcolor: 'rgba(255, 255, 255, 0.25)',
+          border: '1px solid rgba(255,255,255,0.25)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           flex: 1,
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)', // Add this line
+          boxShadow: '0 6px 12px rgba(0,0,0,0.15)',
         }}
       >
         <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>

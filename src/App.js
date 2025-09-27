@@ -318,20 +318,36 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     <Box
       id="dashboard"
       sx={{
-        pb: 12, // increased bottom padding
-        minHeight: '100vh',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'fixed',
-          inset: 0,
-          zIndex: -1,
-          backgroundColor: 'grey.200',
-          backgroundImage:
-            'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0.14) 2px, transparent 2px, transparent 6px)',
-          backgroundSize: '8px 8px'
-        }
-      }}
+  pb: 12,
+  minHeight: '100vh',
+  position: 'relative',
+  // texture layer (furthest back)
+  '&::before': {
+    content: '""',
+    position: 'fixed',
+    inset: 0,
+    zIndex: -2,
+    backgroundColor: 'white.200',
+    backgroundImage:
+      'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18), transparent 55%), repeating-linear-gradient(45deg, rgba(255,255,255,0.16) 0, rgba(255,255,255,0.14) 2px, transparent 2px, transparent 6px)',
+    backgroundSize: '100% 100%, 8px 8px',
+    backgroundBlendMode: 'normal, overlay'
+  },
+  // logo layer (on top of texture, still behind content)
+  '&::after': {
+    content: '""',
+    position: 'fixed',
+    inset: 0,
+    zIndex: -1,
+    pointerEvents: 'none',
+    backgroundImage: 'url(/adaptive-icon.png)',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+    backgroundSize: 'min(80vmin, 100%)',
+    opacity: 0.07,
+    mixBlendMode: 'multiply',
+  }
+}}
     >
       <Header onLogout={handleLogout} />
       <main style={{ paddingTop: '64px', paddingBottom: '40px' }}>

@@ -322,7 +322,7 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                         (cleaningStatus === 'checked' || hasInspectionData) ? 'success.main' :
                         'grey.200'
                     ),
-                    bgcolor: 'rgba(255, 255, 255, 0.39)',
+                    bgcolor: 'rgba(255, 255, 255, 0.64)',
                     // border: '1px solid rgba(255,255,255,0.2)',
                     backdropFilter: 'blur(12)',
                     WebkitBackdropFilter: 'blur(12px)',
