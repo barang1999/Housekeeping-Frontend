@@ -3,10 +3,7 @@ import { startCleaning as apiStartCleaning, finishCleaning as apiFinishCleaning,
 import ConfirmationModal from '../ui/ConfirmationModal';
 
 // MUI Imports
-import { Card, CardContent, Typography, Button, Box, IconButton, Chip } from '@mui/material';
-import SparklesIcon from '@mui/icons-material/AutoAwesome';
-import CheckCircleIcon from '@mui/icons-material/CheckCircleOutline';
-import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
+import { Card, Typography, Button, Box, IconButton } from '@mui/material';
 import ClipboardEditIcon from '@mui/icons-material/EditNote';
 import BanIcon from '@mui/icons-material/Block';
 import CheckIcon from '@mui/icons-material/Check';
@@ -18,7 +15,6 @@ import RoomNotesMenu from './RoomNotesMenu';
 import { useTranslation } from '../i18n/LanguageProvider';
 
 const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
-    
     const [isStarting, setIsStarting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -265,6 +261,48 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
         setPreviousStatusBeforeCheck(null);
     };
 
+    const bottomBorderStyle = useMemo(() => {
+        if (hasInspectionData && inspectionScore !== null) {
+            const score = inspectionScore || 0;
+            const red = '#d32f2f';
+            const yellow = '#f57c00';
+            const green = '#43a047';
+
+            const inspectedCount = inspectionLog.items ? Object.keys(inspectionLog.items).length : 0;
+            const totalItems = 10; // Assuming 10 total items as in InspectionPopup.js
+            const widthPercentage = totalItems > 0 ? (inspectedCount / totalItems) * 100 : 0;
+
+            let background;
+            if (score === 100) {
+                const lighterGreen = '#66bb6a';
+                background = `linear-gradient(to right, ${green}, ${lighterGreen}, ${green})`;
+            } else if (score === 0) {
+                const lighterRed = '#ef5350';
+                background = `linear-gradient(to right, ${red}, ${lighterRed}, ${red})`;
+            } else if (score < 50) {
+                const percentage = (score / 50) * 100;
+                background = `linear-gradient(to right, ${red}, ${yellow} ${percentage}%)`;
+            } else { // 50 <= score < 100
+                const percentage = ((score - 50) / 50) * 100;
+                background = `linear-gradient(to right, ${yellow}, ${green} ${percentage}%)`;
+            }
+
+            return {
+                width: `${widthPercentage}%`,
+                background: background,
+                animation: 'gradient 2s linear infinite',
+                backgroundSize: '200% 100%',
+            };
+        }
+
+        // Fallback for no inspection data
+        return {
+            width: '0%',
+            background: 'transparent',
+            animation: 'none',
+        };
+    }, [hasInspectionData, inspectionScore, inspectionLog]);
+
     return (
         <>
             <Card
@@ -273,57 +311,56 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    p: 0.75,
+                    p: 1,
                     mb: 0.75,
-                    boxShadow: 1,
+                    boxShadow: 5,
                     borderRadius: 2,
-                    borderLeft: 4,
-                    borderColor:
+                    borderLeft: cleaningStatus === 'in_progress' ? 0 : 4,
+                    borderColor: cleaningStatus === 'in_progress' ? 'transparent' : (
                         dndStatus === 'dnd' ? 'error.main' :
-                        cleaningStatus === 'in_progress' ? 'transparent' : // Use transparent for the gradient to show
                         cleaningStatus === 'finished' ? 'info.main' :
                         (cleaningStatus === 'checked' || hasInspectionData) ? 'success.main' :
-                        'grey.200',
+                        'grey.200'
+                    ),
                     bgcolor: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.2)',
+                    // border: '1px solid rgba(255,255,255,0.2)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     transition: 'box-shadow 0.2s ease, transform 0.15s ease',
-                    '&:hover': { boxShadow: 2 },
-                    ...(cleaningStatus === 'in_progress' && {
-                        position: 'relative',
-                        overflow: 'hidden',
-                        borderWidth: '0px',
-                        borderStyle: 'solid',
-                        borderColor: 'transparent',
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            border: '2px solid transparent',
-                            borderRadius: '8px',
-                            background: 'linear-gradient(to right, #ffab00, #ffea00, #ffab00) border-box',
-                            WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
-                            WebkitMaskComposite: 'destination-out',
-                            maskComposite: 'exclude',
-                            animation: 'gradient 3s linear infinite',
-                            backgroundSize: '200% 100%',
+                    '&:hover': { boxShadow: 6 },
+                    position: 'relative',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: '-2px', left: '-2px', right: '-2px', bottom: '-2px',
+                        borderRadius: 'inherit',
+                        background: 'linear-gradient(to right, #ffab00, #ffea00, #ffab00)',
+                        backgroundSize: '200% 100%',
+                        animation: 'gradient 3s linear infinite',
+                        zIndex: -1,
+                        display: cleaningStatus === 'in_progress' ? 'block' : 'none',
+                    },
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        height: '2px',
+                        borderBottomLeftRadius: '2px',
+                        borderBottomRightRadius: '2px',
+                        ...bottomBorderStyle,
+                    },
+                    '@keyframes gradient': {
+                        '0%': {
+                            backgroundPosition: '0% 50%',
                         },
-                        '@keyframes gradient': {
-                            '0%': {
-                                backgroundPosition: '0% 50%',
-                            },
-                            '50%': {
-                                backgroundPosition: '100% 50%',
-                            },
-                            '100%': {
-                                backgroundPosition: '0% 50%',
-                            },
+                        '50%': {
+                            backgroundPosition: '100% 50%',
                         },
-                    }),
+                        '100%': {
+                            backgroundPosition: '0% 50%',
+                        },
+                    },
                 }}
             >
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>

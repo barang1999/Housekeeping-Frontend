@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-import UserProfile from './components/UserProfile';
 import Header from './components/Header';
 import FloorTabs from './components/FloorTabs';
 import RoomsContainer from './components/RoomsContainer';
@@ -13,11 +12,10 @@ import './App.css';
 
 import apiUrl from './api/baseApiClient';
 
-import { refreshToken, ensureValidToken, login, signup } from './api/authApiClient';
-import { fetchRoomNotes } from './api/logsApiClient';
+import { ensureValidToken, login, signup } from './api/authApiClient';
 
 // MUI Imports
-import { Button, Typography, Box } from '@mui/material'; // Removed Container from import
+import { Typography, Box } from '@mui/material'; // Removed Container from import
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -78,7 +76,10 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     });
 
     socket.on("roomChecked", ({ roomNumber, status }) => {
-        setCleaningStatus(prevStatus => ({ ...prevStatus, [roomNumber]: status }));
+        setCleaningStatus(prevStatus => ({
+            ...prevStatus,
+            [roomNumber]: { ...prevStatus[roomNumber], status }
+        }));
     });
 
     socket.on("dndUpdate", ({ roomNumber, dndStatus }) => {
@@ -92,14 +93,15 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     socket.on("inspectionUpdate", ({ roomNumber, log }) => {
         if (!log) return;
         setInspectionLogs(prevLogs => {
-            const prevArray = Array.isArray(prevLogs) ? [...prevLogs] : [];
-            const index = prevArray.findIndex(entry => entry.roomNumber === roomNumber);
-            if (index >= 0) {
-                prevArray[index] = { ...prevArray[index], ...log };
+            const existingLogIndex = prevLogs.findIndex(entry => String(entry.roomNumber).padStart(3, '0') === String(roomNumber).padStart(3, '0'));
+
+            if (existingLogIndex !== -1) {
+                return prevLogs.map((entry, index) =>
+                    index === existingLogIndex ? { ...entry, ...log } : entry
+                );
             } else {
-                prevArray.push(log);
+                return [...prevLogs, log];
             }
-            return prevArray;
         });
     });
 
@@ -279,8 +281,8 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
 
   const handleOptimisticRoomStatusUpdate = (roomNumber, newStatus) => {
     setCleaningStatus(prevStatus => ({
-      ...prevStatus,
-      [roomNumber]: newStatus
+        ...prevStatus,
+        [roomNumber]: { ...prevStatus[roomNumber], status: newStatus }
     }));
   };
 
@@ -336,7 +338,7 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
         {currentView === 0 && (
           <>
             <FloorTabs selectedFloor={selectedFloor} setSelectedFloor={setSelectedFloor} />
-            {isLoadingInitialData ? (
+            {isLoadingInitialData || Object.keys(cleaningStatus).length === 0 ? (
               <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Loading rooms data...</Typography>
             ) : (
               <RoomsContainer 

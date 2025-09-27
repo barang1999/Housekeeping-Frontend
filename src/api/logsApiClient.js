@@ -45,15 +45,24 @@ export const finishCleaning = async (roomNumber, username) => {
 };
 
 export const checkRoom = async (roomNumber, username) => {
-    const response = await fetch(api('/api/logs/check'), {
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${getAuthToken()}`
-        },
-        body: JSON.stringify({ roomNumber: parseInt(roomNumber, 10), username }),
-    });
-    return response.json();
+    try {
+        const response = await fetch(api('/api/logs/check'), {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ roomNumber: parseInt(roomNumber, 10), username }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Network response was not ok');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error checking room:', error);
+        throw error;
+    }
 };
 
 export const resetCleaning = async (roomNumber) => {

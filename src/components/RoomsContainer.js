@@ -11,7 +11,6 @@ const floors = {
 
 const RoomsContainer = ({ selectedFloor, cleaningStatus, dndStatus, priorities, inspectionLogs, roomNotes, socket, onRoomStatusChange }) => {
     const [inspectionRoom, setInspectionRoom] = useState(null);
-    
 
     const handleOpenInspection = (roomNumber) => {
         setInspectionRoom(roomNumber);
