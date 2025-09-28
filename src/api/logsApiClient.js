@@ -312,3 +312,30 @@ export const fetchLiveFeedActivity = async () => {
         throw error;
     }
 };
+
+// New: persisted live feed history (paged)
+export const fetchLiveFeedHistory = async ({ before, limit } = {}) => {
+    try {
+        const params = new URLSearchParams();
+        if (before) {
+            params.set('before', typeof before === 'number' ? new Date(before).toISOString() : String(before));
+        }
+        if (limit) params.set('limit', String(limit));
+
+        const response = await fetch(api(`/api/live-feed${params.toString() ? `?${params.toString()}` : ''}`), {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Network response was not ok');
+        }
+        return await response.json(); // { events: [...] }
+    } catch (error) {
+        console.error('Error fetching live feed history:', error);
+        throw error;
+    }
+};

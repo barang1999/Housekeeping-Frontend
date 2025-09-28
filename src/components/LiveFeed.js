@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Box, Typography, Paper, Chip } from '@mui/material';
-import { fetchLiveFeedActivity } from '../api/logsApiClient';
+import { fetchLiveFeedActivity, fetchLiveFeedHistory } from '../api/logsApiClient';
 import { useTranslation } from '../i18n/LanguageProvider';
 
 const fmt = (d) =>
@@ -56,31 +56,45 @@ function Bubble({ icon, title, subtitle, ts, tags = [], note }) {
 export default function LiveFeed({ socket }) {
   const [items, setItems] = useState([]);
   const { t } = useTranslation();
+  const [oldestTs, setOldestTs] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const seedActivity = async () => {
       try {
-        console.log('[LiveFeed] fetching initial activity');
-        const data = await fetchLiveFeedActivity();
-        const events = data?.events || [];
-
-        if (cancelled || events.length === 0) {
-          if (cancelled) {
-            console.log('[LiveFeed] initial fetch aborted');
-          }
+        console.log('[LiveFeed] fetching initial history from /api/live-feed');
+        const { events = [] } = await fetchLiveFeedHistory({ limit: 50 });
+        if (!cancelled && events.length) {
+          const seeded = events.map((evt, index) => ({
+            id: `${evt.type}-${evt.ts || 'seed'}-${index}`,
+            type: evt.type,
+            payload: evt.payload || {},
+            ts: evt.ts || Date.now(),
+          }));
+          setItems(seeded);
+          setOldestTs(events[events.length - 1]?.ts || null);
           return;
         }
+      } catch (e) {
+        console.warn('[LiveFeed] /api/live-feed not available, falling back', e);
+      }
 
+      // Fallback to legacy synthetic seed
+      try {
+        console.log('[LiveFeed] fetching initial activity (legacy seed)');
+        const data = await fetchLiveFeedActivity();
+        const events = data?.events || [];
+        if (cancelled || events.length === 0) return;
         const seeded = events.map((evt, index) => ({
           id: `${evt.type}-${evt.ts || 'seed'}-${index}`,
           type: evt.type,
           payload: evt.payload,
           ts: evt.ts || Date.now(),
         }));
-
         setItems(seeded);
+        setOldestTs(seeded[seeded.length - 1]?.ts || null);
       } catch (error) {
         console.error('[LiveFeed] failed to fetch initial activity', error);
       }
@@ -92,6 +106,29 @@ export default function LiveFeed({ socket }) {
       cancelled = true;
     };
   }, []);
+
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const before = oldestTs || Date.now();
+      const { events = [] } = await fetchLiveFeedHistory({ before, limit: 50 });
+      if (events.length) {
+        const more = events.map((evt, index) => ({
+          id: `${evt.type}-${evt.ts || 'seed'}-${index}-${Math.random()}`,
+          type: evt.type,
+          payload: evt.payload || {},
+          ts: evt.ts || Date.now(),
+        }));
+        setItems((prev) => [...prev, ...more]);
+        setOldestTs(events[events.length - 1]?.ts || oldestTs);
+      }
+    } catch (e) {
+      console.error('[LiveFeed] loadMore failed', e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     console.log('[LiveFeed] effect run', { hasSocket: Boolean(socket) });
@@ -195,7 +232,19 @@ export default function LiveFeed({ socket }) {
       </Box>
       {items.length === 0
         ? <Typography variant="body2" color="text.secondary">{t('liveFeed.waiting', 'Waiting for live updates…')}</Typography>
-        : <Box>{bubbles}</Box>}
+        : (
+          <Box>
+            {bubbles}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1.5 }}>
+              <Chip
+                label={loadingMore ? t('liveFeed.loading', 'Loading…') : t('liveFeed.loadOlder', 'Load older')}
+                onClick={loadingMore ? undefined : loadMore}
+                variant="outlined"
+                size="small"
+              />
+            </Box>
+          </Box>
+        )}
     </Box>
   );
 }
