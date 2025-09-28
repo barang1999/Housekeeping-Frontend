@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Grid, Card, CardContent, Chip, Typography, Stack, Tooltip, Divider, Fab } from '@mui/material';
+import { Box, Grid, Card, CardContent, Chip, Typography, Stack, Tooltip, Divider, SpeedDial, SpeedDialIcon, SpeedDialAction, Fab } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -39,6 +39,25 @@ const floors = {
   'third-floor': ['201','202','203','204','205','208','209','210','211','212','213','214','215','216','217'],
 };
 
+function summarizeLogsByFloor(logs, floorKey) {
+  const roomsOnFloor = floorKey === 'all' ? ALL_ROOMS : floors[floorKey] || [];
+  const roomSet = new Set(roomsOnFloor);
+  const inspectedSet = new Set(
+    logs
+      .map(l => String(l.roomNumber).padStart(3, '0'))
+      .filter(room => roomSet.size === 0 || roomSet.has(room))
+  );
+  const notInspected = roomsOnFloor
+    .filter(room => !inspectedSet.has(room))
+    .sort((a, b) => Number(a) - Number(b));
+
+  return {
+    totalRooms: roomsOnFloor.length,
+    inspectedCount: inspectedSet.size,
+    notInspected,
+  };
+}
+
 function statusChipColor(score) {
   if (score >= 85) return 'success';
   if (score >= 70) return 'info';
@@ -56,6 +75,11 @@ export default function InspectionContainer() {
   const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [selectedFloor, setSelectedFloor] = useState('ground-floor');
+  const floorLabels = useMemo(() => ({
+    'ground-floor': t('floor.ground', 'G Floor'),
+    'second-floor': t('floor.second', '2nd Floor'),
+    'third-floor': t('floor.third', '3rd Floor'),
+  }), [t]);
 
   useEffect(() => {
     let mounted = true;
@@ -88,18 +112,9 @@ export default function InspectionContainer() {
     return result.sort((a, b) => Number(a.roomNumber) - Number(b.roomNumber));
   }, [logs, selectedFloor]);
 
-  const summary = useMemo(() => {
-    const roomsOnFloor = floors[selectedFloor] || [];
-    const inspectedSet = new Set(logs.map(l => String(l.roomNumber).padStart(3, '0')).filter(r => roomsOnFloor.includes(r)));
-    const notInspected = roomsOnFloor.filter(r => !inspectedSet.has(r)).sort((a,b) => Number(a)-Number(b));
-    return {
-      totalRooms: roomsOnFloor.length,
-      inspectedCount: inspectedSet.size,
-      notInspected,
-    };
-  }, [logs, selectedFloor]);
+  const summary = useMemo(() => summarizeLogsByFloor(logs, selectedFloor), [logs, selectedFloor]);
 
-  const handleExport = () => {
+  const handleExport = (floor) => {
     try {
       const doc = new jsPDF({ orientation: 'landscape' });
 
@@ -109,10 +124,16 @@ export default function InspectionContainer() {
       doc.setFontSize(12);
       doc.text(`Inspection Summary — ${dateStr}`, 14, 14);
 
+      const targetRooms = floor === 'all' ? ALL_ROOMS : floors[floor] || [];
+      const roomSet = new Set(targetRooms);
+      const logsToExport = floor === 'all'
+        ? logs
+        : logs.filter(l => roomSet.has(String(l.roomNumber).padStart(3, '0')));
+
       // Build columns: fixed meta + dynamic item columns (use ITEM_META order and include any extra keys)
       const knownKeys = ITEM_META.map(i => i.key);
       const dynamicKeys = Array.from(new Set(
-        filtered.flatMap(l => Object.keys(l.items || {}))
+        logsToExport.flatMap(l => Object.keys(l.items || {}))
       ));
       const extraKeys = dynamicKeys.filter(k => !knownKeys.includes(k));
       const allItemKeys = [...knownKeys, ...extraKeys];
@@ -125,7 +146,7 @@ export default function InspectionContainer() {
         ...allItemKeys.map(k => (itemMetaByKey[k]?.label || k))
       ]];
 
-      const body = filtered.map(log => {
+      const body = logsToExport.map(log => {
         const updatedAt = log.updatedAt ? new Date(log.updatedAt) : null;
         const base = [
           log.roomNumber,
@@ -210,19 +231,24 @@ export default function InspectionContainer() {
       doc.setFont(undefined, 'bold');
       doc.text('Summary (today)', 14, afterTableY);
       doc.setFont(undefined, 'normal');
-      const line1 = `Inspected: ${summary.inspectedCount}/${summary.totalRooms}`;
+      const exportSummary = summarizeLogsByFloor(logs, floor);
+      const line1 = `Inspected: ${exportSummary.inspectedCount}/${exportSummary.totalRooms}`;
       doc.text(line1, 14, afterTableY + 6);
       const missingLabel = 'Not inspected';
-      const missingText = summary.notInspected.length ? summary.notInspected.join(', ') : 'None';
+      const missingText = exportSummary.notInspected.length ? exportSummary.notInspected.join(', ') : 'None';
       const wrapped = doc.splitTextToSize(`${missingLabel}: ${missingText}`, doc.internal.pageSize.getWidth() - 28);
       doc.text(wrapped, 14, afterTableY + 12);
 
-      const filename = 'inspection_logs_today.pdf';
+      const filename = `inspection_logs_${floor}.pdf`;
       doc.save(filename);
     } catch (e) {
       console.error('Export PDF failed:', e);
     }
   };
+
+  const [exportOpen, setExportOpen] = useState(false);
+  // Space reserved for bottom tab bar (px)
+  const TAB_BAR_OFFSET = 72; // adjust if your tab bar height changes
 
   return (
     <Box sx={{ p: 2 }}>
@@ -320,14 +346,91 @@ export default function InspectionContainer() {
           {t('inspection.summary.missing', 'Not inspected')}: {summary.notInspected.length ? summary.notInspected.join(', ') : t('inspection.summary.none', 'None')}
         </Typography>
       </Box>
-      <Fab
-        color="primary"
-        aria-label={t('inspection.export.aria', 'export')}
-        sx={{ position: 'fixed', bottom: 80, right: 16 }}
-        onClick={handleExport}
+      {/* Floating export actions (Telegram-like) */}
+      <Box
+        sx={{
+          position: 'fixed',
+          right: 16,
+          bottom: `${5 + TAB_BAR_OFFSET}px`,
+          zIndex: (theme) => theme.zIndex.tooltip + 1,
+          // Keep the anchor size constant so the FAB never shifts horizontally
+          width: 56, // typical MUI FAB size (56px)
+          height: 56,
+        }}
       >
-        <FileDownloadIcon />
-      </Fab>
+        <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+          {exportOpen && (
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 0,
+                bottom: 64, // place panel above the FAB
+                p: 1.25,
+                borderRadius: 3,
+                bgcolor: 'rgba(0,0,0,0.35)',
+                boxShadow: 6,
+                backdropFilter: 'blur(2px)',
+              }}
+            >
+              <Stack spacing={1.25} alignItems="flex-end">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    label={t('inspection.export.allFloors', 'All Floors')}
+                    variant="filled"
+                    sx={{
+                      bgcolor: 'grey.100',
+                      color: 'text.primary',
+                      fontWeight: 600,
+                      px: 1.25,
+                      boxShadow: 1,
+                    }}
+                    onClick={() => handleExport('all')}
+                  />
+                  <Fab
+                    size="small"
+                    color="default"
+                    sx={{ bgcolor: 'common.white', color: 'text.primary', boxShadow: 3 }}
+                    onClick={() => handleExport('all')}
+                  >
+                    <FileDownloadIcon fontSize="small" />
+                  </Fab>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    label={`${t('inspection.export.currentFloor', 'Current Floor')}${floorLabels[selectedFloor] ? ` (${floorLabels[selectedFloor]})` : ''}`}
+                    variant="filled"
+                    sx={{ bgcolor: 'grey.100', color: 'text.primary', fontWeight: 600, px: 1.25, boxShadow: 1 }}
+                    onClick={() => handleExport(selectedFloor)}
+                  />
+                  <Fab
+                    size="small"
+                    color="default"
+                    sx={{ bgcolor: 'common.white', color: 'text.primary', boxShadow: 3 }}
+                    onClick={() => handleExport(selectedFloor)}
+                  >
+                    <FileDownloadIcon fontSize="small" />
+                  </Fab>
+                </Box>
+              </Stack>
+            </Box>
+          )}
+          {/* Toggle button (blue) */}
+          <Fab
+            color="primary"
+            onClick={() => setExportOpen((v) => !v)}
+            size="medium"
+            sx={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              boxShadow: 6,
+            }}
+            aria-label={t('inspection.export.toggle', 'toggle export')}
+          >
+            {exportOpen ? <CloseIcon /> : <FileDownloadIcon />}
+          </Fab>
+        </Box>
+      </Box>
     </Box>
   );
 }

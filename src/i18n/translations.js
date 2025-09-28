@@ -143,6 +143,8 @@ export const translations = {
     'inspection.summary.counts': 'Inspected',
     'inspection.summary.missing': 'Not inspected',
     'inspection.summary.none': 'None',
+    'inspection.export.allFloors': 'All Floors',
+    'inspection.export.currentFloor': 'Current Floor',
 
     'leaderboard.title': 'Leaderboard',
     'leaderboard.entry': '{rank}. {name} - {points} points',
@@ -297,6 +299,8 @@ export const translations = {
     'inspection.summary.counts': 'បានត្រួតពិនិត្យ',
     'inspection.summary.missing': 'មិនទាន់បានត្រួតពិនិត្យ',
     'inspection.summary.none': 'គ្មាន',
+    'inspection.export.allFloors': 'ជាន់ទាំងអស់',
+    'inspection.export.currentFloor': 'ជាន់បច្ចុប្បន្ន',
 
     'leaderboard.title': 'ក្រុមចំណាត់ថ្នាក់',
     'leaderboard.entry': '{rank}. {name} - {points} ពិន្ទុ',

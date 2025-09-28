@@ -83,6 +83,7 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     });
 
     socket.on("dndUpdate", ({ roomNumber, dndStatus }) => {
+        console.log('dndUpdate event received:', { roomNumber, dndStatus });
         setDndStatus(prevStatus => ({ ...prevStatus, [roomNumber]: dndStatus ? 'dnd' : 'available' }));
     });
 
@@ -91,6 +92,7 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
     });
 
     socket.on("inspectionUpdate", ({ roomNumber, log }) => {
+        console.log('inspectionUpdate event received:', { roomNumber, log });
         if (!log) return;
         setInspectionLogs(prevLogs => {
             const existingLogIndex = prevLogs.findIndex(entry => String(entry.roomNumber).padStart(3, '0') === String(roomNumber).padStart(3, '0'));
@@ -285,6 +287,8 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
         [roomNumber]: { ...prevStatus[roomNumber], status: newStatus }
     }));
   };
+
+
 
   const handleTabChange = (newValue) => {
     setCurrentView(newValue);

@@ -15,6 +15,7 @@ import RoomNotesMenu from './RoomNotesMenu';
 import { useTranslation } from '../i18n/LanguageProvider';
 
 const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
+    console.log(`Room ${roomNumber} re-rendering with inspectionLog:`, inspectionLog);
     const [isStarting, setIsStarting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -206,6 +207,7 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
     };
 
     const toggleDND = async () => {
+        console.log('toggleDND called for room:', roomNumber);
         const newDndStatus = dndStatus !== 'dnd'; // Toggle DND status
 
         try {
@@ -441,7 +443,7 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                         color="success"
                         size="small"
                         onClick={handleCheckClick}
-                        disabled={isChecking || cleaningStatus !== 'finished' || hasInspectionData || dndStatus === 'dnd'}
+                        disabled={isChecking || cleaningStatus !== 'finished' || dndStatus === 'dnd'}
                         aria-label={t('room.aria.quickCheck', 'Quick Check Room')}
                         sx={{ width: 30, height: 30, '&:hover': { bgcolor: 'action.hover' } }}
                     >
@@ -452,13 +454,11 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                         color={dndStatus === 'dnd' ? 'error' : 'default'}
                         size="small"
                         onClick={toggleDND}
-                        disabled={cleaningStatus === 'in_progress' || cleaningStatus === 'finished' || cleaningStatus === 'checked'}
                         aria-label={t('room.aria.toggleDnd', 'Toggle Do Not Disturb')}
                         sx={{
                             width: 30,
                             height: 30,
                             '&:hover': { bgcolor: 'action.hover' },
-                            ...(cleaningStatus === 'in_progress' || cleaningStatus === 'finished' || cleaningStatus === 'checked' ? { color: 'lightgrey' } : {})
                         }}
                     >
                         <BanIcon sx={{ fontSize: 20 }} />
