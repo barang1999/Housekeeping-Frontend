@@ -3,7 +3,7 @@ import { startCleaning as apiStartCleaning, finishCleaning as apiFinishCleaning,
 import ConfirmationModal from '../ui/ConfirmationModal';
 
 // MUI Imports
-import { Card, Typography, Button, Box, IconButton } from '@mui/material';
+import { Card, Typography, Button, Box, IconButton, Dialog, DialogTitle, DialogContent, Tooltip } from '@mui/material';
 import ClipboardEditIcon from '@mui/icons-material/EditNote';
 import BanIcon from '@mui/icons-material/Block';
 import CheckIcon from '@mui/icons-material/Check';
@@ -11,6 +11,8 @@ import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined';
 import WbSunnyOutlinedIcon from '@mui/icons-material/WbSunnyOutlined';
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
 import DoNotDisturbOnOutlinedIcon from '@mui/icons-material/DoNotDisturbOnOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import RoomNotesMenu from './RoomNotesMenu';
 import { useTranslation } from '../i18n/LanguageProvider';
 
@@ -30,6 +32,7 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
     const [isChecking, setIsChecking] = useState(false);
     const [previousStatusBeforeCheck, setPreviousStatusBeforeCheck] = useState(null);
     const [elapsedTime, setElapsedTime] = useState(0);
+    const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
     const { t } = useTranslation();
 
     useEffect(() => {
@@ -107,7 +110,7 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
         if (todayNote.tags?.includes('No arrival')) return { Icon: DoNotDisturbOnOutlinedIcon, color: 'default' }; // black
         return { Icon: null, color: 'default' };
       };
-    
+
       useEffect(() => {
         const { Icon, color } = getActiveNoteIcon();
         setActiveNoteIcon(Icon ? <Icon fontSize="small" color={color} /> : null);
@@ -116,6 +119,16 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
       useEffect(() => {
         setNotes(roomNote || null);
       }, [roomNote]);
+
+      const handleOpenNoteDialog = () => {
+        if (todayNote?.note || todayNote?.afterTime) {
+            setIsNoteDialogOpen(true);
+        }
+      };
+
+      const handleCloseNoteDialog = () => {
+        setIsNoteDialogOpen(false);
+      };
     
       const handleNoteSave = async (payload) => {
         setNotes(prev => ({
@@ -311,8 +324,9 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                 sx={{
                     width: '100%',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    gap: 0.75,
                     p: 1.5,
                     mb: 0.75,
                     boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12), 0 2px 10px rgba(15, 23, 42, 0.06)',
@@ -365,51 +379,29 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                     },
                 }}
             >
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-                   
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Typography
-                        variant="body1"
-                        component="div"
-                        sx={{ fontWeight: 600, letterSpacing: 0.2, color: statusColor }}
-                      >
-                        {roomNumber}
-                      </Typography>
-                      <RoomNotesMenu
-                        roomNumber={roomNumber}
-                        value={todayNote}
-                        iconSize="small"
-                        triggerIcon={activeNoteIcon}
-                        onSave={handleNoteSave}
-                      />
-                      {cleaningStatus === 'in_progress' && (
-                        <Typography variant="caption" sx={{ ml: 1 }}>
-                            {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
+                        <Typography
+                            variant="body1"
+                            component="div"
+                            sx={{ fontWeight: 600, letterSpacing: 0.2, color: statusColor }}
+                        >
+                            {roomNumber}
                         </Typography>
-                      )}
+                        <RoomNotesMenu
+                            roomNumber={roomNumber}
+                            value={todayNote}
+                            iconSize="small"
+                            triggerIcon={activeNoteIcon}
+                            onSave={handleNoteSave}
+                        />
+                        {cleaningStatus === 'in_progress' && (
+                            <Typography variant="caption" sx={{ ml: 1 }}>
+                                {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
+                            </Typography>
+                        )}
                     </Box>
-                    {(todayNote?.afterTime || todayNote?.note) && (
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mt: -0.25 }}>
-                        {todayNote.afterTime && (
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }} noWrap>
-                            {new Date(`1970-01-01T${todayNote.afterTime}:00`).toLocaleTimeString([], {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                              hour12: true
-                            })}
-                          </Typography>
-                        )}
-                        {todayNote.note && (
-                          <Typography variant="caption" color="text.primary" sx={{ fontSize: '0.8rem', fontWeight: 400 }} noWrap>
-                            {todayNote.note}
-                          </Typography>
-                        )}
-                      </Box>
-                    )}
-                    
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Button
                         variant="outlined" // Outlined for a cleaner look
                         color="info" // Changed to info for light blue
@@ -463,8 +455,118 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                     >
                         <BanIcon sx={{ fontSize: 20 }} />
                     </IconButton>
+                    </Box>
                 </Box>
+                {(todayNote?.afterTime || todayNote?.note) && (
+                    <Box
+                        sx={{
+                            bgcolor: 'rgba(15, 23, 42, 0.03)',
+                            borderRadius: 1.5,
+                            px: 1,
+                            py: 0.75,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.4,
+                        }}
+                    >
+                        {todayNote.afterTime && (
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: '0.7rem', letterSpacing: 0.2 }}
+                            >
+                                {new Date(`1970-01-01T${todayNote.afterTime}:00`).toLocaleTimeString([], {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                })}
+                            </Typography>
+                        )}
+                        {todayNote.note && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                <Typography
+                                    variant="caption"
+                                    color="text.primary"
+                                    sx={{ fontSize: '0.8rem', lineHeight: 1.3, flexGrow: 1 }}
+                                >
+                                    {todayNote.note}
+                                </Typography>
+                                <Tooltip title={t('room.note.view', 'View')} arrow>
+                                    <IconButton size="small" onClick={handleOpenNoteDialog}>
+                                        <VisibilityOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </Box>
+                        )}
+                        {!todayNote.note && (todayNote.afterTime) && (
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Tooltip title={t('room.note.view', 'View')} arrow>
+                                    <IconButton size="small" onClick={handleOpenNoteDialog}>
+                                        <VisibilityOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </Box>
+                        )}
+                    </Box>
+                )}
             </Card>
+            <Dialog
+                open={isNoteDialogOpen}
+                onClose={handleCloseNoteDialog}
+                fullWidth
+                maxWidth="xs"
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        backdropFilter: 'blur(18px)',
+                        WebkitBackdropFilter: 'blur(18px)',
+                        background: 'rgba(255,255,255,0.82)',
+                        border: '1px solid rgba(255,255,255,0.4)',
+                        boxShadow: '0 24px 48px rgba(15, 23, 42, 0.18)',
+                        overflow: 'hidden',
+                    },
+                }}
+            >
+                <DialogTitle sx={{ position: 'relative', pb: 0.5 }}>
+                    <Box>
+                        <Typography variant="overline" sx={{ letterSpacing: 1.2, color: 'text.secondary' }}>
+                            {t('room.note.heading', 'Room')}
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {roomNumber}
+                        </Typography>
+                    </Box>
+                    <IconButton
+                        edge="end"
+                        onClick={handleCloseNoteDialog}
+                        aria-label={t('common.close', 'Close')}
+                        sx={{ position: 'absolute', top: 8, right: 8 }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ pt: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {todayNote?.afterTime && (
+                        <Typography variant="body2" color="text.secondary">
+                            {t('room.note.availableAfter', 'Available after {time}', {
+                                time: new Date(`1970-01-01T${todayNote.afterTime}:00`).toLocaleTimeString([], {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                }),
+                            })}
+                        </Typography>
+                    )}
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                        {todayNote?.note || t('room.note.empty', 'No note provided.')}
+                    </Typography>
+                    {todayNote?.lastUpdatedBy && (
+                        <Typography variant="caption" color="text.secondary">
+                            {t('room.note.lastUpdatedBy', 'Last updated by {user}', { user: todayNote.lastUpdatedBy })}
+                        </Typography>
+                    )}
+                </DialogContent>
+            </Dialog>
             <ConfirmationModal
                 isOpen={showConfirmModal}
                 onClose={cancelStartCleaning}
