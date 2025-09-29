@@ -220,7 +220,13 @@ export default function LiveFeed({ socket }) {
         note = p.notes.note || '';
         if (!subtitle && p.notes.lastUpdatedBy) subtitle = t('liveFeed.byUser', 'by {user}', { user: p.notes.lastUpdatedBy });
       }
-      title = t('liveFeed.roomNote', 'Room {room} note updated', { room: rn });
+      const inlineNote = (note || '').trim();
+      if (inlineNote) {
+        title = t('liveFeed.roomNoteInline', 'Room {room} {note}', { room: rn, note: inlineNote });
+        note = null;
+      } else {
+        title = t('liveFeed.roomNote', 'Room {room} note updated', { room: rn });
+      }
     }
 
     return <Bubble key={it.id} icon={icon} title={title} subtitle={subtitle} ts={it.ts} tags={tags} note={note} />;

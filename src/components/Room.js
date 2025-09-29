@@ -498,15 +498,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
                                 </Tooltip>
                             </Box>
                         )}
-                        {!todayNote.note && (todayNote.afterTime) && (
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <Tooltip title={t('room.note.view', 'View')} arrow>
-                                    <IconButton size="small" onClick={handleOpenNoteDialog}>
-                                        <VisibilityOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            </Box>
-                        )}
                     </Box>
                 )}
             </Card>
