@@ -83,6 +83,7 @@ export default function InspectionContainer() {
 
   useEffect(() => {
     let mounted = true;
+    const POLL_INTERVAL = 120000; // relax polling to every 2 minutes when visible
 
     const load = async () => {
       try {
@@ -102,8 +103,25 @@ export default function InspectionContainer() {
     };
 
     load();
-    const id = setInterval(load, 30000); // poll every 30s like LogsContainer
-    return () => { mounted = false; clearInterval(id); };
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        load();
+      }
+    }, POLL_INTERVAL);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        load();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      mounted = false;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const filtered = useMemo(() => {

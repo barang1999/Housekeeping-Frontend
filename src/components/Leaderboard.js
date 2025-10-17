@@ -10,6 +10,9 @@ const Leaderboard = () => {
     const { t } = useTranslation();
 
     useEffect(() => {
+        let mounted = true;
+        const POLL_INTERVAL = 300000; // 5 minutes
+
         const fetchLeaderboard = async () => {
             try {
                 const token = localStorage.getItem("token");
@@ -19,7 +22,9 @@ const Leaderboard = () => {
                     }
                 });
                 const data = await response.json();
-                setLeaderboard(data);
+                if (mounted) {
+                    setLeaderboard(data);
+                }
             } catch (error) {
                 console.error("Error fetching leaderboard:", error);
             }
@@ -27,10 +32,25 @@ const Leaderboard = () => {
 
         fetchLeaderboard();
 
-        // Optional: Poll for new leaderboard data every minute
-        const interval = setInterval(fetchLeaderboard, 60000);
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                fetchLeaderboard();
+            }
+        }, POLL_INTERVAL);
 
-        return () => clearInterval(interval);
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                fetchLeaderboard();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, []);
 
     return (

@@ -31,10 +31,15 @@ const LogsContainer = () => {
     ], [t]);
 
     useEffect(() => {
+        let isMounted = true;
+        const POLL_INTERVAL = 120000; // 2 minutes
+
         const getLogs = async () => {
             try {
                 const data = await fetchLogs({ status: filterStatus, dateFilter });
-                setLogs(data);
+                if (isMounted) {
+                    setLogs(data);
+                }
             } catch (error) {
                 console.error("Error fetching logs:", error);
             }
@@ -42,10 +47,25 @@ const LogsContainer = () => {
 
         getLogs();
 
-        // Optional: Poll for new logs every 30 seconds
-        const interval = setInterval(getLogs, 30000);
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                getLogs();
+            }
+        }, POLL_INTERVAL);
 
-        return () => clearInterval(interval);
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                getLogs();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, [filterStatus, dateFilter]);
 
     const handleExport = () => {
