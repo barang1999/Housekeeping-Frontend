@@ -9,11 +9,37 @@ import LiveFeed from './components/LiveFeed';
 import Leaderboard from './components/Leaderboard';
 import BottomNavBar from './components/BottomNavBar'; // Import BottomNavBar
 import './App.css';
-
 import apiUrl from './api/baseApiClient';
-
 import { ensureValidToken, login, signup } from './api/authApiClient';
 import { Typography, Box, CircularProgress } from '@mui/material'; // Moved to top to satisfy import/first
+
+
+// --- Serverless wake helper (Railway cold start friendly) ---
+let __wakeInFlight = null;
+async function wakeServer() {
+  if (!apiUrl) return false;
+  if (__wakeInFlight) return __wakeInFlight;
+  __wakeInFlight = (async () => {
+    for (let i = 0; i < 2; i++) {
+      try {
+        const r = await fetch(`${apiUrl}/api/ping`, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (r.ok) return true;
+      } catch {}
+      // small backoff before retry
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+    return false;
+  })().finally(() => { __wakeInFlight = null; });
+  return __wakeInFlight;
+}
+function isVisible() {
+  return typeof document !== 'undefined' && document.visibilityState === 'visible';
+}
 
 function App() {
 
@@ -47,9 +73,15 @@ function App() {
     console.log('[debug] useEffect(token, wantSocket)', { token: !!token, wantSocket });
     const validateTokenAndConnect = async () => {
       const validToken = await ensureValidToken();
-      if (validToken && wantSocket) {
+      if (validToken && wantSocket && isVisible()) {
         console.log('[debug] establishing socket connection');
         setToken(validToken);
+        // Wake the backend before opening the socket (avoids cold-start CORS/timeout)
+        const awake = await wakeServer();
+        if (!awake) {
+          console.warn('[socket] wakeServer failed; will not connect socket yet.');
+          return;
+        }
         console.log("[socket] connecting", { url: apiUrl, path: "/socketio" });
         setIsConnecting(true);
         const newSocket = io(apiUrl, {
@@ -63,8 +95,18 @@ function App() {
           timeout: 10000
         });
 
-        newSocket.on("connect_error", (err) => {
+        newSocket.on("connect_error", async (err) => {
           console.warn('[socket] connect_error', err?.message || err);
+          // First-time retry after ensuring server is awake
+          if (!newSocket.__retrying) {
+            newSocket.__retrying = true;
+            try {
+              await wakeServer();
+              newSocket.connect();
+            } finally {
+              setTimeout(() => { newSocket.__retrying = false; }, 1500);
+            }
+          }
         });
         newSocket.on("error", (err) => {
           console.warn('[socket] error', err?.message || err);
@@ -236,6 +278,12 @@ function App() {
         const registration = await navigator.serviceWorker.register("/sw.js");
         console.log("[push] SW registered:", registration.scope);
 
+        // Ensure backend is awake before calling push endpoints
+        const awake = await wakeServer();
+        if (!awake) {
+          console.warn("[push] backend not awake; skipping push setup");
+          return;
+        }
         // Fetch VAPID public key from backend
         const resp = await fetch(`${apiUrl}/api/push/public-key`, {
           headers: { Authorization: `Bearer ${token}` }
