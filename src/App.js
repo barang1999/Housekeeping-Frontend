@@ -38,45 +38,68 @@ function App() {
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live, 3: Task, 4: Rank, 5: Inspection
   const [isConnecting, setIsConnecting] = useState(true);
+  const [wantSocket, setWantSocket] = useState(false); // connect only when tab is visible
 
   useEffect(() => {
+    const onVis = () => {
+      const visible = document.visibilityState === 'visible';
+      console.log('[debug] visibility changed →', document.visibilityState, 'wantSocket:', visible);
+      setWantSocket(visible);
+    };
+    onVis();
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  useEffect(() => {
+    console.log('[debug] useEffect(token, wantSocket)', { token: !!token, wantSocket });
     const validateTokenAndConnect = async () => {
       const validToken = await ensureValidToken();
-      if (validToken) {
+      if (validToken && wantSocket) {
+        console.log('[debug] establishing socket connection');
         setToken(validToken);
         console.log("[socket] connecting", { url: apiUrl, path: "/socketio" });
         setIsConnecting(true);
         await wakeServer(apiUrl);
         const newSocket = io(apiUrl, {
-            path: "/socketio",
-            transports: ["websocket"], // match server config; avoid polling 400s
-            auth: { token: validToken },
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 500,
-            reconnectionDelayMax: 5000,
-            timeout: 10000
+          path: "/socketio",
+          transports: ["websocket"], // match server config; avoid polling 400s
+          auth: { token: validToken },
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 500,
+          reconnectionDelayMax: 5000,
+          timeout: 10000
         });
 
         newSocket.on("connect_error", (err) => {
-            console.warn('[socket] connect_error', err?.message || err);
+          console.warn('[socket] connect_error', err?.message || err);
         });
         newSocket.on("error", (err) => {
-            console.warn('[socket] error', err?.message || err);
+          console.warn('[socket] error', err?.message || err);
         });
 
         setSocket(newSocket);
-      } else {
+      } else if (!validToken) {
+        console.log('[debug] no valid token → logging out');
         handleLogout();
+      } else {
+        console.log('[debug] socket disabled due to tab not visible');
       }
     };
 
     validateTokenAndConnect();
-
-  }, [token]);
+  }, [token, wantSocket]);
 
   useEffect(() => {
     if (!socket) return;
+    console.log('[debug] socket instance exists →', socket.connected, 'wantSocket:', wantSocket);
+    // If tab becomes hidden, drop the connection to free resources
+    if (!wantSocket) {
+      console.log('[debug] disconnecting socket because tab hidden');
+      try { socket.disconnect(); } catch {}
+      return;
+    }
 
     socket.on("connect", () => {
         console.log("WebSocket connected");
@@ -178,7 +201,7 @@ function App() {
         socket.off("connect_error");
         socket.off("error");
     };
-  }, [socket]);
+  }, [socket, wantSocket]);
 
   useEffect(() => {
     const goToInspection = () => setCurrentView(5);

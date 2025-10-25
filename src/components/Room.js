@@ -17,7 +17,6 @@ import RoomNotesMenu from './RoomNotesMenu';
 import { useTranslation } from '../i18n/LanguageProvider';
 
 const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', priority, inspectionLog, roomNote, socket, onOpenInspection, onRoomStatusChange }) => {
-    console.log(`Room ${roomNumber} re-rendering with inspectionLog:`, inspectionLog);
     const [isStarting, setIsStarting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -90,7 +89,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
             const noteDate = formatter.format(new Date(timestamp));
             return today === noteDate;
         } catch (error) {
-            console.error('Error comparing note date:', error);
             return false;
         }
     };
@@ -141,7 +139,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
             const updated = await updateRoomNotes(roomNumber, payload);
             setNotes(updated);
         } catch (error) {
-            console.error('Error updating room notes:', error);
             // Optionally, revert the state if the API call fails
         }
       };
@@ -167,7 +164,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
             onRoomStatusChange(roomToConfirm, 'in_progress'); // Optimistic UI update
             await apiStartCleaning(roomToConfirm);
         } catch (error) {
-            console.error('Error starting cleaning:', error);
             // Revert UI on error
             onRoomStatusChange(roomToConfirm, previousStatus);
             if (error.message && !error.message.includes('already being cleaned')) {
@@ -203,7 +199,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
             onRoomStatusChange(roomToConfirmFinish, 'finished'); // Optimistic UI update
             await apiFinishCleaning(roomToConfirmFinish, username);
         } catch (error) {
-            console.error('Error finishing cleaning:', error);
             // Revert UI on error
             onRoomStatusChange(roomToConfirmFinish, previousStatus);
             if (error.message && !error.message.includes('already finished')) {
@@ -220,7 +215,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
     };
 
     const toggleDND = async () => {
-        console.log('toggleDND called for room:', roomNumber);
         const newDndStatus = dndStatus !== 'dnd'; // Toggle DND status
 
         try {
@@ -261,7 +255,6 @@ const Room = ({ roomNumber, cleaningStatus, startTime, dndStatus = 'available', 
             onRoomStatusChange(targetRoom, 'checked'); // Optimistic UI update
             await apiCheckRoom(targetRoom, username);
         } catch (error) {
-            console.error('Error checking room:', error);
             onRoomStatusChange(targetRoom, previousStatus); // Revert UI on error
         } finally {
             setIsChecking(false);
