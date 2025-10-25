@@ -1,9 +1,19 @@
 import { api } from './baseApiClient';
 
+// Helper to wake Railway autosleep service before any API call
+async function wakeServer() {
+  try {
+    await fetch(api('/api/ping'), { method: 'GET', cache: 'no-store' });
+  } catch (err) {
+    console.warn('[wakeServer] failed', err?.message || err);
+  }
+}
+
 const getAuthToken = () => localStorage.getItem('token');
 
 export const startCleaning = async (roomNumber) => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/start'), {
             method: 'POST',
             headers: {
@@ -25,6 +35,7 @@ export const startCleaning = async (roomNumber) => {
 
 export const finishCleaning = async (roomNumber, username) => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/finish'), {
             method: "POST",
             headers: { 
@@ -46,6 +57,7 @@ export const finishCleaning = async (roomNumber, username) => {
 
 export const checkRoom = async (roomNumber, username) => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/check'), {
             method: "POST",
             headers: { 
@@ -67,6 +79,7 @@ export const checkRoom = async (roomNumber, username) => {
 
 export const resetCleaning = async (roomNumber) => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/reset-cleaning'), {
             method: 'POST',
             headers: {
@@ -88,6 +101,7 @@ export const resetCleaning = async (roomNumber) => {
 
 export const clearAllLogs = async () => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/clear'), {
             method: 'POST',
             headers: {
@@ -116,6 +130,7 @@ export const fetchLogs = async ({ status = 'all', dateFilter = 'all' }) => {
             url.searchParams.append('dateFilter', dateFilter);
         }
 
+        await wakeServer();
         const response = await fetch(url.toString(), {
             method: 'GET',
             headers: {
@@ -143,6 +158,7 @@ export const setRoomDNDStatus = async (roomNumber, dndStatus, usernameParam) => 
         const payload = { roomNumber: parseInt(roomNumber, 10), dndStatus };
         if (username) payload.username = username; // mirror Finish API style
 
+        await wakeServer();
         const response = await fetch(api('/api/logs/dnd'), {
             method: 'POST',
             headers: {
@@ -164,6 +180,7 @@ export const setRoomDNDStatus = async (roomNumber, dndStatus, usernameParam) => 
 
 export const fetchDNDRooms = async () => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/dnd'), {
             method: 'GET',
             headers: {
@@ -184,6 +201,7 @@ export const fetchDNDRooms = async () => {
 
 export const fetchInspectionLogByRoom = async (roomNumber) => {
     try {
+        await wakeServer();
         const response = await fetch(api(`/api/logs/inspection/${roomNumber}`), {
             method: 'GET',
             headers: {
@@ -207,6 +225,7 @@ export const fetchInspectionLogByRoom = async (roomNumber) => {
 
 export const fetchInspectionLogs = async () => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/inspection'), {
             method: 'GET',
             headers: {
@@ -231,6 +250,7 @@ export const submitInspection = async ({ roomNumber, inspectionResults, overallS
         throw new Error('Missing authentication token');
     }
 
+    await wakeServer();
     const response = await fetch(api('/api/inspection/submit'), {
         method: 'POST',
         headers: {
@@ -254,6 +274,7 @@ export const submitInspection = async ({ roomNumber, inspectionResults, overallS
 
 export const fetchRoomNotes = async () => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/notes'), {
             method: 'GET',
             headers: {
@@ -274,6 +295,7 @@ export const fetchRoomNotes = async () => {
 
 export const updateRoomNotes = async (roomNumber, notes) => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/notes'), {
             method: 'POST',
             headers: {
@@ -295,6 +317,7 @@ export const updateRoomNotes = async (roomNumber, notes) => {
 
 export const fetchLiveFeedActivity = async () => {
     try {
+        await wakeServer();
         const response = await fetch(api('/api/logs/live-feed'), {
             method: 'GET',
             headers: {
@@ -322,6 +345,7 @@ export const fetchLiveFeedHistory = async ({ before, limit } = {}) => {
         }
         if (limit) params.set('limit', String(limit));
 
+        await wakeServer();
         const response = await fetch(api(`/api/live-feed${params.toString() ? `?${params.toString()}` : ''}`), {
             method: 'GET',
             headers: {

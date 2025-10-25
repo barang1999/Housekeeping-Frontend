@@ -1,6 +1,17 @@
+
 import { api } from './baseApiClient';
 
+// Helper to wake Railway autosleep service before authentication requests
+async function wakeServer() {
+  try {
+    await fetch(api('/api/ping'), { method: 'GET', cache: 'no-store' });
+  } catch (err) {
+    console.warn('[wakeServer] failed', err?.message || err);
+  }
+}
+
 export const refreshToken = async () => {
+    await wakeServer();
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
         return null;
@@ -28,6 +39,7 @@ export const refreshToken = async () => {
 };
 
 export const ensureValidToken = async () => {
+    await wakeServer();
     let token = localStorage.getItem("token");
     if (!token) {
         return null;
@@ -46,6 +58,7 @@ export const ensureValidToken = async () => {
 };
 
 export const login = async (username, password) => {
+    await wakeServer();
     try {
         const response = await fetch(api('/api/auth/login'), {
             method: "POST",
@@ -84,6 +97,7 @@ export const login = async (username, password) => {
 };
 
 export const signup = async (username, password) => {
+    await wakeServer();
     try {
         const response = await fetch(api('/api/auth/signup'), {
             method: "POST",

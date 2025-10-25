@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
+import { io } from 'socket.io-client';
 import Header from './components/Header';
 import FloorTabs from './components/FloorTabs';
 import RoomsContainer from './components/RoomsContainer';
@@ -13,9 +13,17 @@ import './App.css';
 import apiUrl from './api/baseApiClient';
 
 import { ensureValidToken, login, signup } from './api/authApiClient';
+import { Typography, Box, CircularProgress } from '@mui/material'; // Moved to top to satisfy import/first
 
-// MUI Imports
-import { Typography, Box } from '@mui/material'; // Removed Container from import
+// Wake the Railway backend before attempting socket connect (autosleep friendly)
+async function wakeServer(baseUrl) {
+  try {
+    await fetch(`${baseUrl}/api/ping`, { method: 'GET', cache: 'no-store' });
+  } catch (e) {
+    console.warn('[wakeServer] failed', e?.message || e);
+  }
+}
+
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -28,26 +36,39 @@ function App() {
   const [inspectionLogs, setInspectionLogs] = useState([]);
   const [roomNotes, setRoomNotes] = useState({});
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
-const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live, 3: Task, 4: Rank, 5: Inspection
+  const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live, 3: Task, 4: Rank, 5: Inspection
+  const [isConnecting, setIsConnecting] = useState(true);
 
   useEffect(() => {
     const validateTokenAndConnect = async () => {
-        const validToken = await ensureValidToken();
-        if (validToken) {
-            setToken(validToken);
-            console.log("[socket] connecting", { url: apiUrl, path: "/socketio" });
-            const newSocket = io(apiUrl, {
-                path: "/socketio",
-                auth: { token: validToken },
-                reconnection: true,
-                reconnectionAttempts: 5,
-                timeout: 5000
-            });
+      const validToken = await ensureValidToken();
+      if (validToken) {
+        setToken(validToken);
+        console.log("[socket] connecting", { url: apiUrl, path: "/socketio" });
+        setIsConnecting(true);
+        await wakeServer(apiUrl);
+        const newSocket = io(apiUrl, {
+            path: "/socketio",
+            transports: ["websocket"], // match server config; avoid polling 400s
+            auth: { token: validToken },
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 500,
+            reconnectionDelayMax: 5000,
+            timeout: 10000
+        });
 
-            setSocket(newSocket);
-        } else {
-            handleLogout();
-        }
+        newSocket.on("connect_error", (err) => {
+            console.warn('[socket] connect_error', err?.message || err);
+        });
+        newSocket.on("error", (err) => {
+            console.warn('[socket] error', err?.message || err);
+        });
+
+        setSocket(newSocket);
+      } else {
+        handleLogout();
+      }
     };
 
     validateTokenAndConnect();
@@ -59,8 +80,24 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
 
     socket.on("connect", () => {
         console.log("WebSocket connected");
+        setIsConnecting(false);
         socket.emit("requestInitialData");
     });
+
+    socket.on("disconnect", (reason) => {
+        console.log("WebSocket disconnected", reason);
+        setIsConnecting(true);
+    });
+    socket.on("reconnect_attempt", (n) => {
+        console.log('[socket] reconnect_attempt', n);
+        setIsConnecting(true);
+    });
+    socket.on("reconnect", (n) => {
+        console.log('[socket] reconnected', n);
+        setIsConnecting(false);
+    });
+    socket.on("connect_error", () => setIsConnecting(true));
+    socket.on("error", () => setIsConnecting(true));
 
     socket.on("initialData", (data) => {
         setCleaningStatus(data.cleaningStatus || {});
@@ -135,6 +172,11 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
         socket.off("inspectionUpdate");
         socket.off("noteUpdate");
         socket.off("dailyReset");
+        socket.off("disconnect");
+        socket.off("reconnect_attempt");
+        socket.off("reconnect");
+        socket.off("connect_error");
+        socket.off("error");
     };
   }, [socket]);
 
@@ -382,6 +424,21 @@ const [currentView, setCurrentView] = useState(0); // 0: Floor, 1: Logs, 2: Live
       
       </main>
       <BottomNavBar onTabChange={handleTabChange} />
+      {isConnecting && (
+        <Box
+          sx={{
+            position: 'fixed', inset: 0, zIndex: 2000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(2px)'
+          }}
+          aria-label="Connecting to server"
+        >
+          <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'white', boxShadow: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <CircularProgress size={20} thickness={4} />
+            <Typography variant="body2" fontWeight={600}>Connecting to server…</Typography>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }
