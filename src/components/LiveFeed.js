@@ -145,12 +145,14 @@ export default function LiveFeed({ socket }) {
     const onDnd = (p) => push('dndUpdate', p);
     const onPriority = (p) => push('priorityUpdate', p);
     const onNote = (p) => push('noteUpdate', p);
+    const onInspection = (p) => push('inspectionUpdate', p);
 
     socket.on('roomUpdate', onRoomUpdate);
     socket.on('roomChecked', onRoomChecked);
     socket.on('dndUpdate', onDnd);
     socket.on('priorityUpdate', onPriority);
     socket.on('noteUpdate', onNote);
+    socket.on('inspectionUpdate', onInspection);
 
     return () => {
       console.log('[LiveFeed] cleanup listeners');
@@ -159,6 +161,7 @@ export default function LiveFeed({ socket }) {
       socket.off('dndUpdate', onDnd);
       socket.off('priorityUpdate', onPriority);
       socket.off('noteUpdate', onNote);
+      socket.off('inspectionUpdate', onInspection);
     };
   }, [socket]);
 
@@ -226,6 +229,20 @@ export default function LiveFeed({ socket }) {
         note = null;
       } else {
         title = t('liveFeed.roomNote', 'Room {room} note updated', { room: rn });
+      }
+    } else if (it.type === 'inspectionUpdate') {
+      console.log('[LiveFeed] rendering inspectionUpdate', it.payload);
+      const score = p.log?.overallScore;
+      const user = p.log?.updatedBy;
+      if (typeof score === 'number') {
+        title = t('liveFeed.roomInspectedScore', 'Room {room} inspected: {score}/100', { room: rn, score });
+        icon = score > 90 ? '🏆' : score < 50 ? '⚠️' : '👍';
+      } else {
+        title = t('liveFeed.roomInspected', 'Room {room} inspected', { room: rn });
+        icon = '🕵️';
+      }
+      if (user) {
+        subtitle = t('liveFeed.byUser', 'by {user}', { user });
       }
     }
 
