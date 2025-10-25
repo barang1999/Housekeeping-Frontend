@@ -20,7 +20,7 @@ async function wakeServer(baseUrl, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
       console.log(`[wakeServer] ping attempt ${i + 1}`);
-      const res = await fetch(`${baseUrl}/api/ping`, { method: 'GET', cache: 'no-store', headers: {} });
+      const res = await fetch('/.netlify/functions/ping', { method: 'GET', cache: 'no-store', headers: {} });
       if (res.ok) {
         console.log('[wakeServer] server is awake');
         return true;
