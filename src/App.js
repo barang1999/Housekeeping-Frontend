@@ -15,28 +15,9 @@ import apiUrl from './api/baseApiClient';
 import { ensureValidToken, login, signup } from './api/authApiClient';
 import { Typography, Box, CircularProgress } from '@mui/material'; // Moved to top to satisfy import/first
 
-// Wake the Railway backend before attempting socket connect (autosleep friendly)
-async function wakeServer(baseUrl, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      console.log(`[wakeServer] ping attempt ${i + 1}`);
-      const res = await fetch('/.netlify/functions/ping', { method: 'GET', cache: 'no-store', headers: {} });
-      if (res.ok) {
-        console.log('[wakeServer] server is awake');
-        return true;
-      }
-    } catch (e) {
-      console.warn('[wakeServer] attempt failed', e?.message || e);
-    }
-    // brief backoff before retrying
-    await new Promise(r => setTimeout(r, 1500));
-  }
-  console.error('[wakeServer] failed to wake server after', retries, 'tries');
-  return false;
-}
-
-
 function App() {
+
+
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [username, setUsername] = useState(localStorage.getItem("username"));
   const [selectedFloor, setSelectedFloor] = useState('ground-floor');
@@ -71,12 +52,6 @@ function App() {
         setToken(validToken);
         console.log("[socket] connecting", { url: apiUrl, path: "/socketio" });
         setIsConnecting(true);
-        const woke = await wakeServer(apiUrl, 3);
-        if (!woke) {
-          console.warn('[socket] skipping connect — server not reachable');
-          setIsConnecting(false); // stop spinner instead of hanging
-          return;
-        }
         const newSocket = io(apiUrl, {
           path: "/socketio",
           transports: ["websocket"], // match server config; avoid polling 400s
