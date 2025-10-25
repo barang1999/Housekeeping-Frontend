@@ -4,7 +4,7 @@ import { api } from './baseApiClient';
 // Helper to wake Railway autosleep service before authentication requests
 async function wakeServer() {
   try {
-    await fetch(api('/api/ping'), { method: 'GET', cache: 'no-store' });
+    await fetch(api('/api/ping'), { method: 'GET', cache: 'no-store', headers: {} });
   } catch (err) {
     console.warn('[wakeServer] failed', err?.message || err);
   }
