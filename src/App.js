@@ -9,9 +9,9 @@ import LiveFeed from './components/LiveFeed';
 import Leaderboard from './components/Leaderboard';
 import BottomNavBar from './components/BottomNavBar'; // Import BottomNavBar
 import './App.css';
-
-
 import apiUrl from './api/baseApiClient';
+import { ensureValidToken, login, signup } from './api/authApiClient';
+import { Typography, Box, CircularProgress } from '@mui/material';
 
 // --- Serverless wake helper (Railway cold start friendly) ---
 let __wakeInFlight = null;
@@ -39,9 +39,6 @@ async function wakeServer() {
 function isVisible() {
   return typeof document !== 'undefined' && document.visibilityState === 'visible';
 }
-
-import { ensureValidToken, login, signup } from './api/authApiClient';
-import { Typography, Box, CircularProgress } from '@mui/material'; // Moved to top to satisfy import/first
 
 function App() {
 
